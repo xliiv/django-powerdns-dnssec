@@ -12,6 +12,12 @@ from powerdns.models.powerdns import Record, Domain
 from powerdns.models.templates import RecordTemplate, DomainTemplate
 
 
+from django.contrib.auth.models import User
+class UserFactory(DjangoModelFactory):
+    class Meta:
+        model = User
+
+
 class DomainTemplateFactory(DjangoModelFactory):
     class Meta:
         model = DomainTemplate
@@ -30,6 +36,7 @@ class DomainFactory(DjangoModelFactory):
         model = Domain
 
     name = factory.Sequence(lambda n: 'name%d.com' % n)
+    owner = factory.SubFactory(UserFactory)
 
 
 class RecordFactory(DjangoModelFactory):
