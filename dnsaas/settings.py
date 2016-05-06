@@ -177,13 +177,14 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.DjangoObjectPermissions',
     ),
     'DEFAULT_PAGINATION_CLASS':
         'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 100,
+    'PAGE_SIZE': 50,
 }
 
 
@@ -194,7 +195,6 @@ REST_FRAMEWORK = {
 # more details on how to customize your logging configuration.
 
 
-import os
 if os.environ.get('DJANGO_SETTINGS_PROFILE') == 'tests':
     DATABASES['default']['NAME'] = ':memory:'
 
@@ -223,4 +223,7 @@ SITE_TITLE = 'Django powerdns'
 
 
 if not TESTING:
-    from settings_local import *  # noqa
+    try:
+        from settings_local import *  # noqa
+    except ImportError:
+        pass
