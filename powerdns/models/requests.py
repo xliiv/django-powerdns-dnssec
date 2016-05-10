@@ -218,6 +218,7 @@ class DomainRequest(ChangeCreateRequest):
 rules.add_perm('powerdns.add_domainrequest', rules.is_authenticated)
 
 
+#TODO:: RecordLike should be called also in API?
 class RecordRequest(ChangeCreateRequest, RecordLike):
 
     copy_fields = [

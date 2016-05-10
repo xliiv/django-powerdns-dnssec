@@ -7,6 +7,7 @@ from powerdns.models import (
     DomainMetadata,
     DomainTemplate,
     Record,
+    RecordRequest,
     RecordTemplate,
     SuperMaster,
 )
@@ -36,6 +37,19 @@ class DomainSerializer(OwnerSerializer):
     class Meta:
         model = Domain
         read_only_fields = ('notified_serial',)
+
+
+
+
+
+#TODO::
+class RecordSerializerVer1(OwnerSerializer):
+    class Meta:
+        model = RecordRequest
+        fields = ('domain',)
+
+
+
 
 
 class RecordSerializer(OwnerSerializer):

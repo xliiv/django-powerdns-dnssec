@@ -27,6 +27,7 @@ from powerdns.serializers import (
     DomainSerializer,
     DomainTemplateSerializer,
     RecordSerializer,
+    RecordSerializerVer1,
     RecordTemplateSerializer,
     SuperMasterSerializer,
 )
@@ -71,6 +72,13 @@ class RecordViewSet(OwnerViewSet):
     serializer_class = RecordSerializer
     filter_fields = ('name', 'content', 'domain')
     search_fields = filter_fields
+
+    def get_serializer_class(self):
+        if self.request.version == 'v1':
+            serializer_class = RecordSerializerVer1
+        else:
+            serializer_class = RecordSerializer
+        return serializer_class
 
     def get_queryset(self):
         queryset = super().get_queryset()
