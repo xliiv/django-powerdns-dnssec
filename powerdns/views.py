@@ -27,7 +27,6 @@ from powerdns.serializers import (
     DomainSerializer,
     DomainTemplateSerializer,
     RecordSerializer,
-    RecordSerializerVer1,
     RecordTemplateSerializer,
     SuperMasterSerializer,
 
@@ -93,14 +92,11 @@ class RecordViewSet(OwnerViewSet):
 
 
     def get_serializer_class(self):
-        if self.request.version == 'v1':
-            if self.request.method in ['POST']:
-                serializer_class = RecordSerializerVer1
-            else:
-                serializer_class = RecordSerializer
+        if self.request.method in ['POST', 'PUT', 'PATCH']:
+            serializer_class = RecordRequestSerializer
         else:
             serializer_class = RecordSerializer
-        print(self.request.version, serializer_class)
+        print(serializer_class)
         return serializer_class
 
 
@@ -117,7 +113,7 @@ class RecordViewSet(OwnerViewSet):
         auto_accept = (
             self.request.user.is_superuser or
             self.request.user == serializer.instance.domain.owner or
-            serializer.instance.domain.name.lower().strip() in settings.FORCE_AUTO_ACCEPT_DOMAINS
+            serializer.instance.domain.name in settings.FORCE_AUTO_ACCEPT_DOMAINS
         )
         if auto_accept:
             record = serializer.instance.accept()

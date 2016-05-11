@@ -16,6 +16,7 @@ from rest_framework.serializers import(
     HyperlinkedRelatedField,
     SlugRelatedField,
     ReadOnlyField,
+    PrimaryKeyRelatedField,
 )
 from powerdns.utils import DomainForRecordValidator
 
@@ -43,15 +44,12 @@ class DomainSerializer(OwnerSerializer):
 
 
 #TODO::
+from django.contrib.auth.models import User
 class RecordRequestSerializer(HyperlinkedModelSerializer):
+    owner = PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
+
     class Meta:
         model = RecordRequest
-
-
-class RecordSerializerVer1(OwnerSerializer):
-    class Meta:
-        model = RecordRequest
-
 
 
 

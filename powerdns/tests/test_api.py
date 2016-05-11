@@ -123,9 +123,7 @@ class TestAddingRecords(BaseApiTestCase):
             'target_name': 'example.com',
             'target_content': '192.168.0.1',
         }
-        response = self.client.post(url, data, format='json',
-            **{'HTTP_ACCEPT': 'application/json; version=v1'}
-        )
+        response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         record_pk = resolve(parse.urlparse(response.data['record']).path).kwargs['pk']
         self.assertTrue(Record.objects.get(pk=record_pk))
@@ -140,9 +138,7 @@ class TestAddingRecords(BaseApiTestCase):
             'target_name': 'example.com',
             'target_content': '192.168.0.1',
         }
-        response = self.client.post(url, data, format='json',
-            **{'HTTP_ACCEPT': 'application/json; version=v1'}
-        )
+        response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         record_pk = resolve(parse.urlparse(response.data['record']).path).kwargs['pk']
         self.assertTrue(Record.objects.get(pk=record_pk))
@@ -157,9 +153,7 @@ class TestAddingRecords(BaseApiTestCase):
             'target_name': 'example.com',
             'target_content': '192.168.0.1',
         }
-        response = self.client.post(url, data, format='json',
-            **{'HTTP_ACCEPT': 'application/json; version=v1'}
-        )
+        response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         request_record = RecordRequest.objects.get(
             pk=resolve(parse.urlparse(response.data['url']).path).kwargs['pk']
