@@ -249,6 +249,8 @@ class Domain(TimeTrackable, Owned, WithRequests):
     def save(self, *args, **kwargs):
         # This save can trigger creating some templated records.
         # So we do it atomically
+        if self.name:
+            self.name = self.name.lower()
         with transaction.atomic():
             super(Domain, self).save(*args, **kwargs)
 
