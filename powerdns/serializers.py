@@ -43,10 +43,14 @@ class DomainSerializer(OwnerSerializer):
 
 
 #TODO::
+class RecordRequestSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = RecordRequest
+
+
 class RecordSerializerVer1(OwnerSerializer):
     class Meta:
         model = RecordRequest
-        fields = ('domain',)
 
 
 

@@ -229,3 +229,8 @@ if not TESTING:
         from settings_local import *  # noqa
     except ImportError:
         pass
+
+# list of domains for which RecordsRequests are instantly saved to Records
+# model
+# eg FORCE_AUTO_ACCEPT_DOMAINS = ['domain.pl', 'domain2.pl']
+FORCE_AUTO_ACCEPT_DOMAINS = []

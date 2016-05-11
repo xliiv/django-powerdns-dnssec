@@ -30,6 +30,8 @@ from powerdns.serializers import (
     RecordSerializerVer1,
     RecordTemplateSerializer,
     SuperMasterSerializer,
+
+    RecordRequestSerializer,
 )
 from powerdns.utils import VERSION, to_reverse
 
@@ -66,6 +68,20 @@ class DomainViewSet(OwnerViewSet):
     permission_classes = (DomainPermission,)
 
 
+
+
+class RecordRequestsViewSet(ModelViewSet):
+
+    queryset = RecordRequest.objects.all()#.select_related('owner', 'domain')
+    serializer_class = RecordRequestSerializer
+    #filter_fields = ('name', 'content', 'domain')
+    #search_fields = filter_fields
+
+
+
+
+
+
 class RecordViewSet(OwnerViewSet):
 
     queryset = Record.objects.all().select_related('owner', 'domain')
@@ -73,12 +89,48 @@ class RecordViewSet(OwnerViewSet):
     filter_fields = ('name', 'content', 'domain')
     search_fields = filter_fields
 
+
+
+
     def get_serializer_class(self):
         if self.request.version == 'v1':
-            serializer_class = RecordSerializerVer1
+            if self.request.method in ['POST']:
+                serializer_class = RecordSerializerVer1
+            else:
+                serializer_class = RecordSerializer
         else:
             serializer_class = RecordSerializer
+        print(self.request.version, serializer_class)
         return serializer_class
+
+
+
+    #TODO:: write test for 2 version of api?
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        from rest_framework import status
+        from rest_framework.response import Response
+        from django.conf import settings
+        auto_accept = (
+            self.request.user.is_superuser or
+            self.request.user == serializer.instance.domain.owner or
+            serializer.instance.domain.name in settings.FORCE_AUTO_ACCEPT_DOMAINS
+        )
+        if auto_accept:
+            record = serializer.instance.accept()
+            serializer.instance.record = record
+            serializer.instance.save()
+            serializer.data['record'] = record
+            status = status.HTTP_201_CREATED
+            headers = {'Location': serializer.data['record']}
+        else:
+            status = status.HTTP_202_ACCEPTED
+            headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status, headers=headers)
+
 
     def get_queryset(self):
         queryset = super().get_queryset()

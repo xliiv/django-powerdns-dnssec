@@ -99,8 +99,13 @@ from rest_framework.test import APITestCase
 from powerdns.models.powerdns import Record
 from powerdns.tests.utils import DomainFactory, user_client
 from powerdns.models.requests import RecordRequest
+from django.core.urlresolvers import resolve
+from urllib import parse
+
+
 class TestAddingRecords(BaseApiTestCase):
     def setUp(self):
+        self.client = APIClient()
         super().setUp()
         self.regular_user1 = get_user_model().objects.create_user(
             'regular_user1', 'regular_user1@test.test', 'regular_user1'
@@ -114,37 +119,50 @@ class TestAddingRecords(BaseApiTestCase):
         url = '/api/records/' # TODO: reverse('record-create')
         domain = DomainFactory(name='example.com', owner=self.super_user)
         data = {
-            'type': 'cname'.upper(),
+            'target_type': 'cname'.upper(),
             'domain': '/api/domains/' + str(domain.id) + '/',
-            'name': 'example.com',
-            'content': '192.168.0.1',
+            'target_name': 'example.com',
+            'target_content': '192.168.0.1',
         }
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(url, data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v1'}
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        record_pk = resolve(parse.urlparse(response.data['record']).path).kwargs['pk']
+        self.assertTrue(Record.objects.get(pk=record_pk))
 
     def test_regular_user_owns_domain(self):
         self.client.login(username='regular_user1', password='regular_user1')
         url = '/api/records/' # TODO: reverse('record-create')
         domain = DomainFactory(name='example.com', owner=self.regular_user1)
         data = {
-            'type': 'cname'.upper(),
+            'target_type': 'cname'.upper(),
             'domain': '/api/domains/' + str(domain.id) + '/',
-            'name': 'example.com',
-            'content': '192.168.0.1',
+            'target_name': 'example.com',
+            'target_content': '192.168.0.1',
         }
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(url, data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v1'}
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        record_pk = resolve(parse.urlparse(response.data['record']).path).kwargs['pk']
+        self.assertTrue(Record.objects.get(pk=record_pk))
 
     def test_regular_user_not_own_domain(self):
-        self.client.login(username='regular_user2', password='regular_user2')
+        self.client.login(username='regular_user1', password='regular_user1')
         url = '/api/records/' # TODO: reverse('record-create')
         domain = DomainFactory(name='example.com', owner=self.regular_user2)
         data = {
-            'type': 'cname'.upper(),
+            'target_type': 'cname'.upper(),
             'domain': '/api/domains/' + str(domain.id) + '/',
-            'name': 'example.com',
-            'content': '192.168.0.1',
+            'target_name': 'example.com',
+            'target_content': '192.168.0.1',
         }
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(RecordRequest.objects.filter(record_id=response.data['id']))
+        response = self.client.post(url, data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v1'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        request_record = RecordRequest.objects.get(
+            pk=resolve(parse.urlparse(response.data['url']).path).kwargs['pk']
+        )
+        self.assertFalse(request_record.record)
