@@ -105,7 +105,6 @@ from urllib import parse
 
 class TestAddingRecords(BaseApiTestCase):
     def setUp(self):
-        self.client = APIClient()
         super().setUp()
         self.regular_user1 = get_user_model().objects.create_user(
             'regular_user1', 'regular_user1@test.test', 'regular_user1'

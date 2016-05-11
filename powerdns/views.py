@@ -117,7 +117,7 @@ class RecordViewSet(OwnerViewSet):
         auto_accept = (
             self.request.user.is_superuser or
             self.request.user == serializer.instance.domain.owner or
-            serializer.instance.domain.name in settings.FORCE_AUTO_ACCEPT_DOMAINS
+            serializer.instance.domain.name.lower().strip() in settings.FORCE_AUTO_ACCEPT_DOMAINS
         )
         if auto_accept:
             record = serializer.instance.accept()
