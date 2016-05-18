@@ -11,7 +11,10 @@ from powerdns.utils import AutoPtrOptions
 
 from powerdns.tests.utils import (
     DomainFactory,
+    DomainTemplateFactory,
     RecordFactory,
+    DomainRequestFactory,
+    RecordRequestFactory,
     user_client,
 )
 
@@ -34,18 +37,34 @@ class TestPermissions(TestCase):
         self.user = User.objects.create_user(
             'user', 'superuser@example.com', 'password'
         )
+        su_domain_template = DomainTemplateFactory(name='su_reverse')
         self.su_domain = DomainFactory(
             name='su.example.com',
             owner=self.superuser,
+            reverse_template=su_domain_template,
+        )
+        self.su_domainrequest = DomainRequestFactory(
+            name='su.example.com',
+            owner=self.superuser,
+            reverse_template=su_domain_template,
+            domain=self.su_domain,
         )
         self.unrestricted_domain = DomainFactory(
             name='unrestricted.example.com',
             owner=self.superuser,
             unrestricted=True,
         )
+        u_domain_template = DomainTemplateFactory(name='user_reverse')
         self.u_domain = DomainFactory(
             name='u.example.com',
             owner=self.user,
+            reverse_template=u_domain_template,
+        )
+        self.u_domainrequest = DomainRequestFactory(
+            name='u.example.com',
+            owner=self.user,
+            reverse_template=u_domain_template,
+            domain=self.u_domain,
         )
         self.su_record = RecordFactory(
             domain=self.su_domain,
@@ -55,6 +74,15 @@ class TestPermissions(TestCase):
             owner=self.superuser,
             auto_ptr=AutoPtrOptions.NEVER,
         )
+        self.su_recordrequest = RecordRequestFactory(
+            #TODO:: RequestRecord should create Record from its data
+            domain=self.su_domain,
+            name='www.su.example.com',
+            type='A',
+            content='192.168.1.1',
+            owner=self.superuser,
+            record=self.su_record,
+        )
         self.u_record = RecordFactory(
             domain=self.u_domain,
             name='www.u.example.com',
@@ -63,6 +91,17 @@ class TestPermissions(TestCase):
             owner=self.user,
             auto_ptr=AutoPtrOptions.NEVER,
         )
+        self.u_recordrequest = RecordRequestFactory(
+            #TODO:: RequestRecord should create Record from its data
+            domain=self.u_domain,
+            name=self.u_record.name,
+            type=self.u_record.type,
+            content=self.u_record.content,
+            owner=self.u_record.owner,
+            record=self.u_record,
+        )
+
+
         self.su_client = user_client(self.superuser)
         self.u_client = user_client(self.user)
 
@@ -85,7 +124,6 @@ class TestPermissions(TestCase):
     def test_authorised_user_can_edit_other_domains(self):
         """Normal user can edit domains she doesn't own if authorised."""
         Authorisation.objects.create(
-            owner=self.superuser,
             target=self.su_domain,
             authorised=self.user
         )
@@ -98,13 +136,13 @@ class TestPermissions(TestCase):
     def test_user_can_edit_her_domains(self):
         """Normal user can edit domains she owns."""
         request = self.u_client.patch(
-            get_domain_url(self.u_domain),
+            get_domain_url(self.u_domainrequest.domain),
             {'type': 'NATIVE'},
         )
         self.assertEqual(request.status_code, 200)
 
-    def test_user_can_create_domain(self):
-        """Normal user can create domain that is not a child of other domain.
+    def test_user_cant_create_domain(self):
+        """Normal user cant create domain that is not a child of other domain.
         """
         request = self.u_client.post(
             reverse('domain-list'),
@@ -132,7 +170,7 @@ class TestPermissions(TestCase):
     def test_su_can_edit_all_records(self):
         """Superuser can edit record not owned by herself."""
         request = self.su_client.patch(
-            get_record_url(self.u_record),
+            get_record_url(self.u_recordrequest.record),
             {'content': '192.168.1.3'},
         )
         self.assertEqual(request.status_code, 200)
@@ -140,28 +178,27 @@ class TestPermissions(TestCase):
     def test_u_cant_edit_other_records(self):
         """Normal user can't edit record not owned by herself."""
         request = self.u_client.patch(
-            get_record_url(self.su_record),
+            get_record_url(self.su_recordrequest.record),
             {'content': '192.168.1.3'},
         )
-        self.assertEqual(request.status_code, 403)
+        self.assertEqual(request.status_code, 202)
 
     def test_authorised_user_can_edit_other_records(self):
         """Normal user can edit record not owned by herself if authorised."""
         Authorisation.objects.create(
-            owner=self.superuser,
             target=self.su_record,
             authorised=self.user,
         )
         request = self.u_client.patch(
-            get_record_url(self.su_record),
+            get_record_url(self.su_recordrequest.record),
             {'content': '192.168.1.3'},
         )
         self.assertEqual(request.status_code, 200)
 
     def test_u_can_edit_her_records(self):
-        """Normal user can edit record not owned by herself."""
+        """Normal user can edit record owned by herself."""
         request = self.u_client.patch(
-            get_record_url(self.u_record),
+            get_record_url(self.u_recordrequest.record),
             {'content': '192.168.1.3'},
         )
         self.assertEqual(request.status_code, 200)
@@ -221,4 +258,4 @@ class TestPermissions(TestCase):
                 'auto_ptr': AutoPtrOptions.NEVER.id,
             },
         )
-        self.assertEqual(request.status_code, 400)
+        self.assertEqual(request.status_code, 202)

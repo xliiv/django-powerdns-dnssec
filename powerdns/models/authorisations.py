@@ -10,12 +10,6 @@ from powerdns.utils import is_owner
 class Authorisation(models.Model):
     """A revokable allowance to access / edit domains / records"""
 
-    owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        null=False,
-        blank=False,
-        related_name='issued_authorisations',
-    )
     authorised = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=False,
@@ -28,7 +22,7 @@ class Authorisation(models.Model):
 
     def __str__(self):
         return '{} authorised {} to {}'.format(
-            self.owner,
+            self.target.owner,
             self.authorised,
             self.target,
         )

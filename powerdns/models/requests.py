@@ -41,6 +41,7 @@ class Request(Owned):
         null=True,
         blank=True
     )
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True)
 
     def reject(self):
         """Reject the request"""
@@ -53,8 +54,8 @@ class Request(Owned):
             yield (reverse(self.view, kwargs={'pk': self.pk}), 'Accept')
 
     def save(self, *args, **kwargs):
-        if self.owner is None:
-            self.owner = get_current_user()
+        if self.reporter is None:
+            self.reporter = get_current_user()
         super().save(*args, **kwargs)
 
 
@@ -82,7 +83,7 @@ class ChangeCreateRequest(Request):
     """Abstract change/create request"""
 
     ignore_fields = {'created', 'modified'}
-    prefix = 'target_'
+    prefix = ''
 
     class Meta:
         abstract = True
@@ -107,15 +108,15 @@ class DomainRequest(ChangeCreateRequest):
     """Request for domain creation/modification"""
 
     copy_fields = [
-        'target_name',
-        'target_master',
-        'target_type',
-        'target_account',
-        'target_remarks',
-        'target_template',
-        'target_reverse_template',
-        'target_record_auto_ptr',
-        'target_owner',
+        'name',
+        'master',
+        'type',
+        'account',
+        'remarks',
+        'template',
+        'reverse_template',
+        'record_auto_ptr',
+        'owner',
     ]
 
     domain = models.ForeignKey(
@@ -137,35 +138,35 @@ class DomainRequest(ChangeCreateRequest):
         ),
 
     )
-    target_name = models.CharField(
+    name = models.CharField(
         _("name"),
         max_length=255,
         validators=[validate_domain_name],
         blank=False,
         null=False,
     )
-    target_master = models.CharField(
+    master = models.CharField(
         _("master"), max_length=128, blank=True, null=True,
     )
-    target_type = models.CharField(
+    type = models.CharField(
         _("type"),
         max_length=6,
         blank=True,
         null=True,
         choices=Domain.DOMAIN_TYPE,
     )
-    target_account = models.CharField(
+    account = models.CharField(
         _("account"), max_length=40, blank=True, null=True,
     )
-    target_remarks = models.TextField(_('Additional remarks'), blank=True)
-    target_template = models.ForeignKey(
+    remarks = models.TextField(_('Additional remarks'), blank=True)
+    template = models.ForeignKey(
         'powerdns.DomainTemplate',
         verbose_name=_('Template'),
         blank=True,
         null=True,
         related_name='template_for_requests'
     )
-    target_reverse_template = models.ForeignKey(
+    reverse_template = models.ForeignKey(
         'powerdns.DomainTemplate',
         verbose_name=_('Reverse template'),
         blank=True,
@@ -177,14 +178,14 @@ class DomainRequest(ChangeCreateRequest):
             'template.'
         )
     )
-    target_record_auto_ptr = ChoiceField(
+    record_auto_ptr = ChoiceField(
         choices=AutoPtrOptions,
         default=AutoPtrOptions.ALWAYS,
         help_text=_(
             'Should A records have auto PTR by default'
         )
     )
-    target_unrestricted = models.BooleanField(
+    unrestricted = models.BooleanField(
         _('Unrestricted'),
         null=False,
         default=False,
@@ -193,7 +194,7 @@ class DomainRequest(ChangeCreateRequest):
             "to it without owner's permission?"
         )
     )
-    target_owner = models.ForeignKey(
+    owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name=_('Owner'),
         null=True,  # For the sake of existing ones
@@ -205,7 +206,7 @@ class DomainRequest(ChangeCreateRequest):
     view = 'accept_domain'
 
     def __str__(self):
-        return self.target_name
+        return self.name
 
     def get_object(self):
         if self.domain is not None:
@@ -218,18 +219,20 @@ class DomainRequest(ChangeCreateRequest):
 rules.add_perm('powerdns.add_domainrequest', rules.is_authenticated)
 
 
+#TODO:: RecordLike should be called also in API?
 class RecordRequest(ChangeCreateRequest, RecordLike):
 
     copy_fields = [
-        'target_name',
-        'target_type',
-        'target_content',
-        'target_prio',
-        'target_auth',
-        'target_disabled',
-        'target_remarks',
-        'target_ttl',
-        'target_owner',
+        'auto_ptr',
+        'name',
+        'type',
+        'content',
+        'prio',
+        'auth',
+        'disabled',
+        'remarks',
+        'ttl',
+        'owner',
     ]
 
     domain = models.ForeignKey(
@@ -249,32 +252,32 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
             'The record for which a change is being requested'
         ),
     )
-    target_name = models.CharField(
+    name = models.CharField(
         _("name"), max_length=255, blank=False, null=False,
         validators=[validate_domain_name],
         help_text=_("Actual name of a record. Must not end in a '.' and be"
                     " fully qualified - it is not relative to the name of the"
                     " domain!"),
     )
-    target_type = models.CharField(
+    type = models.CharField(
         _("type"), max_length=6, blank=False, null=False,
         choices=Record.RECORD_TYPE, help_text=_("Record qtype"),
     )
-    target_content = models.CharField(
+    content = models.CharField(
         _("content"), max_length=255, blank=True, null=True,
         help_text=_("The 'right hand side' of a DNS record. For an A"
                     " record, this is the IP address"),
     )
-    target_ttl = models.PositiveIntegerField(
+    ttl = models.PositiveIntegerField(
         _("TTL"), blank=True, null=True, default=3600,
         help_text=_("TTL in seconds"),
     )
-    target_prio = models.PositiveIntegerField(
+    prio = models.PositiveIntegerField(
         _("priority"), blank=True, null=True,
         help_text=_("For MX records, this should be the priority of the"
                     " mail exchanger specified"),
     )
-    target_auth = models.NullBooleanField(
+    auth = models.NullBooleanField(
         _("authoritative"),
         help_text=_("Should be set for data for which is itself"
                     " authoritative, which includes the SOA record and our own"
@@ -283,7 +286,7 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
                     " records"),
         default=True,
     )
-    target_disabled = models.BooleanField(
+    disabled = models.BooleanField(
         _("Disabled"),
         help_text=_(
             "This record should not be used for actual DNS queries."
@@ -291,9 +294,13 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
         ),
         default=False,
     )
-
-    target_remarks = models.TextField(blank=True)
-    target_owner = models.ForeignKey(
+    auto_ptr = ChoiceField(
+        _('Auto PTR record'),
+        choices=AutoPtrOptions,
+        default=AutoPtrOptions.ALWAYS,
+    )
+    remarks = models.TextField(blank=True)
+    owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name=_('Owner'),
         null=True,  # For the sake of existing ones
@@ -307,17 +314,18 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
             return self.record.pk
 
     def __str__(self):
-        if self.target_prio is not None:
-            content = "%d %s" % (self.target_prio, self.target_content)
+        if self.prio is not None:
+            content = "%d %s" % (self.prio, self.content)
         else:
-            content = self.target_content
-        return "%s IN %s %s" % (self.target_name, self.target_type, content)
+            content = self.content
+        return "%s IN %s %s" % (self.name, self.type, content)
 
     def get_object(self):
         if self.record is not None:
-            return self.record
+            record = self.record
         else:
-            return Record(domain=self.domain, owner=self.owner)
+            record = Record(domain=self.domain, owner=self.owner)
+        return record
 
 
 rules.add_perm('powerdns.add_recordrequest', rules.is_authenticated)

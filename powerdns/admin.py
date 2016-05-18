@@ -101,6 +101,7 @@ class CopyingAdmin(admin.ModelAdmin):
         form = super().get_form(request, obj, **kwargs)
         from_pk = request.GET.get(self.from_field)
         if from_pk is not None:
+            #TODO:: hardcode list of fields?
             self.from_object = self.FromModel.objects.get(pk=from_pk)
             for field in self.CopyFieldsModel.copy_fields:
                 form.base_fields[field[len(self.field_prefix):]].initial = \
@@ -115,8 +116,9 @@ class RequestAdmin(CopyingAdmin):
 
     def get_form(self, *args, **kwargs):
         form = super().get_form(*args, **kwargs)
-        form.base_fields['target_owner'].initial =\
-            form.base_fields['target_owner'].initial or get_current_user()
+        #TODO:: this should be readonly field
+        form.base_fields['reporter'].initial =\
+            form.base_fields['reporter'].initial or get_current_user()
         return form
 
 
@@ -132,6 +134,7 @@ class OwnedAdmin(ForeignKeyAutocompleteAdmin, ObjectPermissionsModelAdmin):
     def get_related_filter(self, model, request):
         return super(OwnedAdmin, self).get_related_filter(model, request)
         user = request.user
+        #TODO:: handle this
         if not issubclass(model, Owned) or rules.is_superuser(user):
             return super(OwnedAdmin, self).get_related_filter(model, request)
         return models.Q(owner=user)
@@ -286,7 +289,7 @@ class RecordTemplateAdmin(ForeignKeyAutocompleteAdmin):
 
 class DomainRequestForm(autocomplete_light.ModelForm):
     class Meta:
-        exclude = ['owner', 'state']
+        exclude = ['state']
 
 
 class DomainRequestAdmin(RequestAdmin):
@@ -295,7 +298,7 @@ class DomainRequestAdmin(RequestAdmin):
     from_field = 'domain'
     FromModel = Domain
     CopyFieldsModel = DomainRequest
-    target_prefix = 'target_'
+    target_prefix = ''
     readonly_fields = ['key']
 
 
@@ -335,13 +338,13 @@ class DeleteRequestForm(ModelForm):
     class Meta:
         model = DeleteRequest
         fields = [
-            'owner',
+            'reporter',
             'target_id',
             'content_type',
             'key',
         ]
         widgets = {
-            'owner': HiddenInput(),
+            'reporter': HiddenInput(),
             'key': HiddenInput(),
             'target_id': HiddenInput(),
             'content_type': HiddenInput(),
@@ -350,7 +353,7 @@ class DeleteRequestForm(ModelForm):
 
 class DeleteRequestAdmin(ObjectPermissionsModelAdmin):
     form = DeleteRequestForm
-    fields = ['owner', 'target_id', 'content_type']
+    fields = ['reporter', 'target_id', 'content_type']
 
     def add_view(self, request, extra_context=None):
         extra_context = extra_context or {}
@@ -364,16 +367,16 @@ class DeleteRequestAdmin(ObjectPermissionsModelAdmin):
 
 class RecordRequestForm(autocomplete_light.ModelForm):
     class Meta:
-        exclude = ['owner', 'state']
+        exclude = ['state']
 
 
 class RecordRequestAdmin(RequestAdmin):
     form = RecordRequestForm
-    list_display = ['target_' + field for field in RECORD_LIST_FIELDS]
+    list_display = ['' + field for field in RECORD_LIST_FIELDS]
     from_field = 'record'
     FromModel = Record
     CopyFieldsModel = RecordRequest
-    target_prefix = 'target_'
+    target_prefix = ''
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)

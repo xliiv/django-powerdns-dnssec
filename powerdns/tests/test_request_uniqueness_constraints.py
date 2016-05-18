@@ -45,58 +45,58 @@ class TestRequestUniquenessConstraints(RecordTestCase):
         """The validation allows an A record when it doesn't conflict with
         existing CNAME"""
         self.validate(
-            target_type='A',
-            target_name='wiki.example.com',
-            target_content='192.168.1.2',
-            target_owner=self.user,
+            type='A',
+            name='wiki.example.com',
+            content='192.168.1.2',
+            owner=self.user,
         )
 
     def test_noconflict_with_itself(self):
         """A CNAME record can be resaved (it doesn't conflict with itself.)"""
         self.validate(
             record=self.cname_record,
-            target_type='CNAME',
-            target_name='blog.example.com',
-            target_content='www2.example.com',
-            target_owner=self.user,
+            type='CNAME',
+            name='blog.example.com',
+            content='www2.example.com',
+            owner=self.user,
         )
 
     def test_conflicting_a_record(self):
         """The validation doesn't allow an A recrod when it conflicts with
         existing CNAME"""
         self.check_invalid(
-            target_type='A',
-            target_name='blog.example.com',
-            target_content='192.168.1.2',
-            target_owner=self.user,
+            type='A',
+            name='blog.example.com',
+            content='192.168.1.2',
+            owner=self.user,
         )
 
     def test_nonconflicting_cname_record(self):
         """The validation allows an CNAME record when it doesn't conflict with
         existing A"""
         self.validate(
-            target_type='CNAME',
-            target_name='wiki.example.com',
-            target_content='site.example.com',
-            target_owner=self.user,
+            type='CNAME',
+            name='wiki.example.com',
+            content='site.example.com',
+            owner=self.user,
         )
 
     def test_conflicting_cname_record(self):
         """The validation doesn't allow a CNAME record when it conflicts with
         existing A"""
         self.check_invalid(
-            target_type='CNAME',
-            target_name='www.example.com',
-            target_content='site.example.com',
-            target_owner=self.user,
+            type='CNAME',
+            name='www.example.com',
+            content='site.example.com',
+            owner=self.user,
         )
 
     def test_conflicting_second_cname_record(self):
         """The validation doesn't allow a CNAME record when it conflicts with
         existing CNAME"""
         self.check_invalid(
-            target_type='CNAME',
-            target_name='blog.example.com',
-            target_content='site.example.com',
-            target_owner=self.user,
+            type='CNAME',
+            name='blog.example.com',
+            content='site.example.com',
+            owner=self.user,
         )

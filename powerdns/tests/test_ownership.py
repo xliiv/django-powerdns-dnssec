@@ -54,9 +54,9 @@ class TestDomainOwnership(TestOwnershipBase):
         """Domain owner is set to explicitly set value"""
         request = self.client.post(
             '/api/domains/',
-            data={'name': 'owned.example.com', 'owner': 'user2'},
+            data={'name': 'owned.example.com', 'owner': self.user2.username},
         )
-        self.assertOwner(request, 'user2', mailed=True)
+        self.assertOwner(request, 'user2', mailed=False)
 
 
 class TestRecordOwnership(TestOwnershipBase):
@@ -88,7 +88,7 @@ class TestRecordOwnership(TestOwnershipBase):
                 'type': 'CNAME',
                 'name': 'www.owned.example.com',
                 'content': 'blog.owned.example.com',
-                'owner': 'user2',
+                'owner': self.user2.username,
             },
         )
-        self.assertOwner(request, 'user2', mailed=True)
+        self.assertOwner(request, 'user2', mailed=False)

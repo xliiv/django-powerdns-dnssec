@@ -7,16 +7,22 @@ from powerdns.models import (
     DomainMetadata,
     DomainTemplate,
     Record,
+    RecordRequest,
+    DomainRequest,
     RecordTemplate,
     SuperMaster,
 )
 from rest_framework.serializers import(
     HyperlinkedModelSerializer,
     HyperlinkedRelatedField,
+    CharField,
     SlugRelatedField,
     ReadOnlyField,
 )
-from powerdns.utils import DomainForRecordValidator
+from powerdns.utils import (
+    DomainForRecordValidator,
+    validate_domain_name,
+)
 
 
 class OwnerSerializer(HyperlinkedModelSerializer):
@@ -36,6 +42,45 @@ class DomainSerializer(OwnerSerializer):
     class Meta:
         model = Domain
         read_only_fields = ('notified_serial',)
+
+
+class DomainRequestSerializer(HyperlinkedModelSerializer):
+    owner = SlugRelatedField(
+        slug_field='username',
+        queryset=User.objects.all(),
+        allow_null=True,
+        required=False,
+    )
+    reporter = SlugRelatedField(
+        slug_field='username',
+        queryset=User.objects.all(),
+        allow_null=True,
+        required=False,
+    )
+    name = CharField(
+        validators=[validate_domain_name]
+    )
+
+    class Meta:
+        model = DomainRequest
+
+
+class RecordRequestSerializer(HyperlinkedModelSerializer):
+    owner = SlugRelatedField(
+        slug_field='username',
+        queryset=User.objects.all(),
+        allow_null=True,
+        required=False,
+    )
+    reporter = SlugRelatedField(
+        slug_field='username',
+        queryset=User.objects.all(),
+        allow_null=True,
+        required=False,
+    )
+
+    class Meta:
+        model = RecordRequest
 
 
 class RecordSerializer(OwnerSerializer):

@@ -2,7 +2,7 @@
 
 from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.views.generic.base import TemplateView
 
 from powerdns.models import (
@@ -17,15 +17,18 @@ from powerdns.models import (
     RecordRequest,
     SuperMaster,
 )
+from rest_framework import status
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import DjangoObjectPermissions
+from rest_framework.response import Response
 
 from powerdns.serializers import (
     CryptoKeySerializer,
     DomainMetadataSerializer,
     DomainSerializer,
     DomainTemplateSerializer,
+    RecordRequestSerializer,
     RecordSerializer,
     RecordTemplateSerializer,
     SuperMasterSerializer,
@@ -53,8 +56,10 @@ class OwnerViewSet(FiltersMixin, ModelViewSet):
         if serializer.validated_data.get('owner') is None:
             serializer.save(owner=self.request.user)
         else:
-            object_ = serializer.save()
-            object_.email_owner(self.request.user)
+            serializer.save()
+            # object_ = serializer.save()
+            # usless? this is handled by jira in design
+            # object_.email_owner(self.request.user)
 
 
 class DomainViewSet(OwnerViewSet):
@@ -65,12 +70,79 @@ class DomainViewSet(OwnerViewSet):
     permission_classes = (DomainPermission,)
 
 
+class RecordRequestsViewSet(ModelViewSet):
+    queryset = RecordRequest.objects.all() # .select_related('owner', 'domain')
+    serializer_class = RecordRequestSerializer
+    # filter_fields = ('name', 'content', 'domain')
+    # search_fields = filter_fields
+
+
 class RecordViewSet(OwnerViewSet):
 
     queryset = Record.objects.all().select_related('owner', 'domain')
     serializer_class = RecordSerializer
     filter_fields = ('name', 'content', 'domain')
     search_fields = filter_fields
+
+    def get_serializer_class(self):
+        if self.request.method in ['POST', 'PUT', 'PATCH']:
+            serializer_class = RecordRequestSerializer
+        else:
+            serializer_class = RecordSerializer
+        print(serializer_class)
+        return serializer_class
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        # TODO:: moved to model + added check in save() that this was called?
+        auto_accept = (
+            self.request.user.is_superuser or
+            serializer.instance.domain.unrestricted == True or
+            self.request.user == serializer.instance.domain.owner or
+            request.user.id in serializer.instance.domain.authorisations.values_list('authorised', flat=True) # noqa
+        )
+        if auto_accept:
+            record = serializer.instance.accept()
+            serializer.instance.record = record
+            serializer.instance.save()
+            serializer.data['record'] = record
+            code = status.HTTP_201_CREATED
+            headers = {'Location': serializer.data['record']}
+        else:
+            code = status.HTTP_202_ACCEPTED
+            headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=code, headers=headers)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = get_object_or_404(
+            RecordRequest, record__pk=self.get_object().pk)
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        auto_accept = (
+            self.request.user.is_superuser or
+            # serializer.instance.domain.unrestricted == True or
+            # self.request.user == serializer.instance.domain.owner or
+            request.user.id == instance.record.owner.id or
+            request.user.id in instance.record.authorisations.values_list(
+                'authorised', flat=True)
+        )
+        if auto_accept:
+            record = serializer.instance.accept()
+            serializer.instance.record = record
+            serializer.instance.save()
+            serializer.data['record'] = record
+            code = status.HTTP_200_OK
+            headers = {'Location': serializer.data['record']}
+        else:
+            code = status.HTTP_202_ACCEPTED
+            headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=code, headers=headers)
 
     def get_queryset(self):
         queryset = super().get_queryset()

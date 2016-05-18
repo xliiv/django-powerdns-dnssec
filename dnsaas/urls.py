@@ -8,17 +8,18 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 from powerdns.utils import VERSION
 from powerdns.views import (
-    accept_domain_request,
-    accept_record_request,
-    accept_delete_request,
     CryptoKeyViewSet,
     DomainMetadataViewSet,
+    DomainTemplateViewSet,
     DomainViewSet,
     HomeView,
+    RecordRequestsViewSet,
+    RecordTemplateViewSet,
     RecordViewSet,
     SuperMasterViewSet,
-    DomainTemplateViewSet,
-    RecordTemplateViewSet,
+    accept_delete_request,
+    accept_domain_request,
+    accept_record_request,
 )
 
 title = settings.SITE_TITLE
@@ -39,6 +40,7 @@ router.register(r'domains-metadata', DomainMetadataViewSet)
 router.register(r'super-masters', SuperMasterViewSet)
 router.register(r'domain-templates', DomainTemplateViewSet)
 router.register(r'record-templates', RecordTemplateViewSet)
+router.register(r'record-requests', RecordRequestsViewSet)
 
 urlpatterns = patterns(
     '',

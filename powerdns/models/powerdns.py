@@ -179,6 +179,7 @@ class Domain(TimeTrackable, Owned, WithRequests):
         ('SLAVE', 'SLAVE'),
     )
     copy_fields = ['record_auto_ptr']
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True)
     name = models.CharField(
         _("name"),
         unique=True,
@@ -249,6 +250,8 @@ class Domain(TimeTrackable, Owned, WithRequests):
     def save(self, *args, **kwargs):
         # This save can trigger creating some templated records.
         # So we do it atomically
+        if self.name:
+            self.name = self.name.lower()
         with transaction.atomic():
             super(Domain, self).save(*args, **kwargs)
 
@@ -279,6 +282,7 @@ class Domain(TimeTrackable, Owned, WithRequests):
     add_record_link.allow_tags = True
 
     def extra_buttons(self):
+        #TODO: delete when new GUI
         authorised = get_current_user().has_perm(
             'powerdns.change_domain', self
         )
@@ -301,6 +305,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         Domain,
         verbose_name=_("domain"),
     )
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True)
     name = models.CharField(
         _("name"),
         max_length=255,
@@ -540,7 +545,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         )
 
 rules.add_perm('powerdns.add_record', rules.is_authenticated)
-rules.add_perm('powerdns.change_record', can_edit)
+rules.add_perm('powerdns.change_record', rules.is_authenticated)
 rules.add_perm('powerdns.delete_record', can_delete)
 
 
