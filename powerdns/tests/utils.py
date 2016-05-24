@@ -9,6 +9,7 @@ from factory.django import DjangoModelFactory
 from rest_framework.test import APIClient
 
 from powerdns.models.powerdns import Record, Domain
+from powerdns.models.requests import RecordRequest
 from powerdns.models.templates import RecordTemplate, DomainTemplate
 
 
@@ -24,7 +25,6 @@ class RecordTemplateFactory(DjangoModelFactory):
         model = RecordTemplate
 
 
-
 class DomainFactory(DjangoModelFactory):
     class Meta:
         model = Domain
@@ -38,6 +38,13 @@ class RecordFactory(DjangoModelFactory):
 
     domain = factory.SubFactory(DomainFactory)
 
+
+class RecordRequestFactory(DjangoModelFactory):
+    class Meta:
+        model = RecordRequest
+
+    record = factory.SubFactory(RecordFactory)
+    domain = factory.SubFactory(DomainFactory)
 
 
 class RecordTestCase(TestCase):

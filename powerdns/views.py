@@ -1,8 +1,9 @@
 """Views and viewsets for DNSaaS API"""
+import logging
 
 from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.views.generic.base import TemplateView
 
 from powerdns.models import (
@@ -17,20 +18,28 @@ from powerdns.models import (
     RecordRequest,
     SuperMaster,
 )
+from rest_framework import exceptions, status
 from rest_framework.filters import DjangoFilterBackend
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import DjangoObjectPermissions
+from rest_framework.response import Response
 
+from powerdns.models.powerdns import can_delete, can_edit
 from powerdns.serializers import (
     CryptoKeySerializer,
     DomainMetadataSerializer,
     DomainSerializer,
     DomainTemplateSerializer,
+    RecordRequestSerializer,
     RecordSerializer,
+    RecordSerializerV2,
     RecordTemplateSerializer,
     SuperMasterSerializer,
 )
 from powerdns.utils import VERSION, to_reverse
+
+
+log = logging.getLogger(__name__)
 
 
 class DomainPermission(DjangoObjectPermissions):
@@ -61,16 +70,148 @@ class DomainViewSet(OwnerViewSet):
 
     queryset = Domain.objects.all().select_related('owner')
     serializer_class = DomainSerializer
-    filter_fields = ('name', 'type')
+    filter_fields = ('name', 'type', 'owner',)
     permission_classes = (DomainPermission,)
+
+
+class RecordRequestsViewSet(ReadOnlyModelViewSet):
+    queryset = RecordRequest.objects.all().select_related(
+        'owner', 'domain', 'record', 'target_owner',
+    )
+    filter_fields = ('owner',)
+    serializer_class = RecordRequestSerializer
 
 
 class RecordViewSet(OwnerViewSet):
 
     queryset = Record.objects.all().select_related('owner', 'domain')
     serializer_class = RecordSerializer
-    filter_fields = ('name', 'content', 'domain')
+    filter_fields = ('name', 'content', 'domain', 'owner',)
     search_fields = filter_fields
+
+    def get_object(self):
+        obj = super().get_object()
+        if self.request.version == 'v1':
+            if (
+                self.request._request.method in ('PATCH', 'PUT') and
+                not can_edit(self.request.user, obj)
+            ):
+                raise exceptions.PermissionDenied(detail='No permission')
+            if (
+                self.request._request.method == 'DELETE' and
+                not can_delete(self.request.user, obj)
+            ):
+                raise exceptions.PermissionDenied(detail='No permission')
+        return obj
+
+    def get_serializer_class(self):
+        if self.request.version == 'v1':
+            serializer_class = RecordSerializer
+        if self.request.version == 'v2':
+            serializer_class = RecordSerializerV2
+        return serializer_class
+
+    def create(self, request, *args, **kwargs):
+        if self.request.version == 'v1':
+            return super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        record_request = RecordRequest(
+            domain_id=serializer.validated_data['domain'],
+            owner_id=request.user.id,
+        )
+        record_request.copy_records_data(serializer.validated_data.items())
+        record_request.save()
+
+        auto_accept = (
+            self.request.user.is_superuser or
+            serializer.validated_data['domain'].unrestricted or
+            self.request.user == serializer.validated_data['domain'].owner or
+            request.user.id in serializer.validated_data['domain'].authorisations.values_list('authorised', flat=True) # noqa
+        )
+        if auto_accept:
+            serializer.save()
+            record_request.record = serializer.instance
+            record_request.accept()
+            data = serializer.data
+            code = status.HTTP_201_CREATED
+            headers = {}
+        else:
+            data = {}
+            code = status.HTTP_202_ACCEPTED
+            headers = {
+                'Location': reverse(
+                    'recordrequest-detail', kwargs={'pk': record_request.id}
+                )
+            }
+        return Response(data, status=code, headers=headers)
+
+    def update(self, request, *args, **kwargs):
+        if self.request.version == 'v1':
+            return super().update(request, *args, **kwargs)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+
+        record_request = RecordRequest(
+            domain_id=serializer.instance.domain_id,
+            owner_id=request.user.id,
+            record_id=serializer.instance.id,
+        )
+        # in validated_data lands fields required by model, even if they
+        # weren't changed, so filter it by matching validated vs initial
+        data_to_copy = [
+            (field_name, serializer.validated_data[field_name])
+            for field_name in (
+                serializer.validated_data.keys() &
+                serializer.initial_data.keys()
+            )
+        ]
+        record_request.copy_records_data(data_to_copy)
+        record_request.save()
+        auto_accept = (
+            self.request.user.is_superuser or
+            serializer.instance.domain.unrestricted or
+            self.request.user == serializer.instance.domain.owner or
+            request.user == instance.owner or
+            request.user.id in instance.authorisations.values_list(
+                'authorised', flat=True)
+        )
+        if auto_accept:
+            record_request.accept_and_assign_record()
+            code = status.HTTP_200_OK
+            headers = {}
+        else:
+            code = status.HTTP_202_ACCEPTED
+            headers = {
+                'Location': reverse(
+                    'recordrequest-detail', kwargs={'pk': record_request.id}
+                )
+            }
+        return Response(serializer.data, status=code, headers=headers)
+
+    def destroy(self, request, *args, **kwargs):
+        if self.request.version == 'v1':
+            return super().create(request, *args, **kwargs)
+
+        instance = self.get_object()
+        delete_request = DeleteRequest(
+            owner=self.request.user, target=instance,
+        )
+        delete_request.save()
+        auto_accept = (
+            self.request.user.is_superuser or
+            instance.domain.owner == request.user or
+            instance.owner == request.user
+        )
+        if auto_accept:
+            instance.delete()
+            code = status.HTTP_204_NO_CONTENT
+        else:
+            code = status.HTTP_202_ACCEPTED
+        return Response(status=code)
 
     def get_queryset(self):
         queryset = super().get_queryset()

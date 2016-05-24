@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib import admin
 from django.contrib.admin.widgets import AdminRadioSelect
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.forms import (
     HiddenInput,
@@ -26,6 +27,7 @@ from rules.contrib.admin import ObjectPermissionsModelAdmin
 from threadlocals.threadlocals import get_current_user
 
 
+from powerdns.models.powerdns import can_edit
 from powerdns.models.templates import (
     DomainTemplate,
     RecordTemplate,
@@ -138,6 +140,12 @@ class OwnedAdmin(ForeignKeyAutocompleteAdmin, ObjectPermissionsModelAdmin):
 
 
 class RecordAdmin(OwnedAdmin, CopyingAdmin):
+    def has_delete_permission(self, request, obj=None):
+        return can_delete(request.user, obj)
+
+    def has_change_permission(self, request, obj=None):
+        return can_edit(request.user, obj)
+
     form = RecordAdminForm
     list_display = (
         'name',
