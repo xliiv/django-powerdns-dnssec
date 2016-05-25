@@ -19,6 +19,7 @@ from powerdns.views import (
     SuperMasterViewSet,
     DomainTemplateViewSet,
     RecordTemplateViewSet,
+    TsigKeysViewSet,
 )
 
 title = settings.SITE_TITLE
@@ -39,6 +40,7 @@ router.register(r'domains-metadata', DomainMetadataViewSet)
 router.register(r'super-masters', SuperMasterViewSet)
 router.register(r'domain-templates', DomainTemplateViewSet)
 router.register(r'record-templates', RecordTemplateViewSet)
+router.register(r'tsigkeys', TsigKeysViewSet)
 
 urlpatterns = patterns(
     '',

@@ -25,7 +25,6 @@ from powerdns.models.authorisations import Authorisation
 from rules.contrib.admin import ObjectPermissionsModelAdmin
 from threadlocals.threadlocals import get_current_user
 
-
 from powerdns.models.templates import (
     DomainTemplate,
     RecordTemplate,
@@ -36,11 +35,12 @@ from powerdns.models.requests import (
     RecordRequest,
 )
 from powerdns.utils import Owned, DomainForRecordValidator, is_owner
+from powerdns.models.tsigkeys import TsigKeys
 
+from powerdns.models.tsigkeys import TsigKeys
 
 class NullBooleanRadioSelect(NullBooleanSelect, AdminRadioSelect):
     pass
-
 
 try:
     from django.contrib.admin import SimpleListFilter
@@ -392,3 +392,4 @@ admin.site.register(Authorisation, AuthorisationAdmin)
 admin.site.register(DomainRequest, DomainRequestAdmin)
 admin.site.register(RecordRequest, RecordRequestAdmin)
 admin.site.register(DeleteRequest, DeleteRequestAdmin)
+admin.site.register(TsigKeys)

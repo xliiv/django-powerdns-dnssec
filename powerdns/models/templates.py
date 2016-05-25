@@ -10,7 +10,6 @@ from dj.choices.fields import ChoiceField
 from powerdns.models.powerdns import Domain, Record
 from powerdns.utils import AutoPtrOptions
 
-
 class DomainTemplateManager(models.Manager):
     def get_by_natural_key(self, name):
         return self.get(name=name)

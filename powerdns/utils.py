@@ -25,10 +25,7 @@ def validate_ipv6_address(value):
             _(u'Enter a valid IPv6 address.'), code='invalid',
         )
 
-
 VERSION = working_set.find(Requirement.parse('django-powerdns-dnssec')).version
-
-
 DOMAIN_NAME_RECORDS = ('CNAME', 'MX', 'NAPTR', 'NS', 'PTR')
 
 
