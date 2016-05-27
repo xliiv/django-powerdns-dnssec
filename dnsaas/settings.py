@@ -20,7 +20,7 @@ DATABASES = {
         'NAME': 'dnsaas',
         'USER': 'dnsaas',
         'PASSWORD': 'dnsaas',
-        'HOST': 'localhost',
+        'HOST': os.environ.get('DNSAAS_MYSQL_HOST', 'localhost'),
         'PORT': '3306',
     }
 }
