@@ -3,7 +3,7 @@ import logging
 
 from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from django.views.generic.base import TemplateView
 
 from powerdns.models import (
@@ -152,7 +152,9 @@ class RecordViewSet(OwnerViewSet):
             return super().update(request, *args, **kwargs)
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial,
+        )
         serializer.is_valid(raise_exception=True)
 
         record_request = RecordRequest(

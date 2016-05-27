@@ -4,7 +4,6 @@ from django.contrib.auth import get_user_model
 from django.contrib import admin
 from django.contrib.admin.widgets import AdminRadioSelect
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.forms import (
     HiddenInput,
@@ -27,7 +26,7 @@ from rules.contrib.admin import ObjectPermissionsModelAdmin
 from threadlocals.threadlocals import get_current_user
 
 
-from powerdns.models.powerdns import can_edit
+from powerdns.models.powerdns import can_delete, can_edit
 from powerdns.models.templates import (
     DomainTemplate,
     RecordTemplate,
