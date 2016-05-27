@@ -263,7 +263,8 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
     record = models.ForeignKey(
         Record,
         # used for history purpose
-        #on_delete=models.DO_NOTHING,
+        # TODO::
+        # on_delete=models.DO_NOTHING,
         db_constraint=False,
         related_name='requests',
         null=True,
