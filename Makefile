@@ -1,2 +1,2 @@
 flake: 
-	flake8 --exclude migrations powerdns/
+	flake8 --exclude migrations dnsaas/ powerdns/

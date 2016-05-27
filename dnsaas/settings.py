@@ -18,10 +18,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'dnsaas',
-        'USER': os.environ.get('DNSAAS_MYSQL_USER', 'dnsaas'),
-        'PASSWORD': os.environ.get('DNSAAS_MYSQL_PASSWORD', 'dnsaas'),
-        'HOST': os.environ.get('DNSAAS_MYSQL_HOST', 'localhost'),
+        'USER': os.environ.get('DNSAAS_DB_USER', 'dnsaas'),
+        'PASSWORD': os.environ.get('DNSAAS_DB_PASSWORD', 'dnsaas'),
+        'HOST': os.environ.get('DNSAAS_DB_HOST', 'localhost'),
         'PORT': '3306',
+        'TEST': {
+            'NAME': 'test_dnsaas',
+        },
     }
 }
 
