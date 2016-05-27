@@ -19,7 +19,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'dnsaas',
         'USER': 'dnsaas',
-        'PASSWORD': 'dnsaas',
+        'PASSWORD': os.environ.get('DNSAAS_MYSQL_PASSWORD', 'dnsaas'),
         'HOST': os.environ.get('DNSAAS_MYSQL_HOST', 'localhost'),
         'PORT': '3306',
     }

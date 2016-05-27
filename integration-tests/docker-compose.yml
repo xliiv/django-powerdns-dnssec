@@ -13,6 +13,7 @@ dnsaas:
     links: 
         - mysql:db
     environment:
+        - DNSAAS_MYSQL_PASSWORD=root
         - DNSAAS_MYSQL_HOST=db
 pdns:
     image: "zefciu/pdns"
