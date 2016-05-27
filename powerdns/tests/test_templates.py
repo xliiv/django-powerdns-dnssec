@@ -30,7 +30,7 @@ class TestTemplates(TestCase):
                 'ns1.{domain-name} hostmaster.{domain-name} '
                 '0 43200 600 1209600 600'
             ),
-            domain_template = self.domain_template1,
+            domain_template=self.domain_template1,
         )
         self.t1_ns_record = RecordTemplateFactory(
             type='NS',
@@ -38,7 +38,7 @@ class TestTemplates(TestCase):
             content=(
                 'ns1.{domain-name}'
             ),
-            domain_template = self.domain_template1,
+            domain_template=self.domain_template1,
         )
         self.t1_a_record = RecordTemplateFactory(
             type='A',
@@ -46,7 +46,7 @@ class TestTemplates(TestCase):
             content=(
                 '192.168.1.3'
             ),
-            domain_template = self.domain_template1,
+            domain_template=self.domain_template1,
             auto_ptr=AutoPtrOptions.ALWAYS,
         )
         self.domain_template2 = DomainTemplateFactory(name='template2')
@@ -57,7 +57,7 @@ class TestTemplates(TestCase):
                 'nameserver1.{domain-name} hostmaster.{domain-name} '
                 '0 43200 1200 1209600 1200'
             ),
-            domain_template = self.domain_template2,
+            domain_template=self.domain_template2,
         )
         RecordTemplateFactory(
             type='NS',
@@ -65,7 +65,7 @@ class TestTemplates(TestCase):
             content=(
                 'nameserver1.{domain-name}'
             ),
-            domain_template = self.domain_template2,
+            domain_template=self.domain_template2,
         )
         RecordTemplateFactory(
             type='NS',
@@ -73,7 +73,7 @@ class TestTemplates(TestCase):
             content=(
                 'nameserver2.{domain-name}'
             ),
-            domain_template = self.domain_template2,
+            domain_template=self.domain_template2,
         )
 
     def test_record_creation(self):
@@ -119,7 +119,10 @@ class TestTemplates(TestCase):
 
     def test_template_modify(self):
         """Record is changed when its template is modified"""
-        domain = Domain(name='example.com', template=self.domain_template1)
+        domain = Domain(
+            name='example.com', template=self.domain_template1,
+            reverse_template=self.reverse_template,
+        )
         domain.save()
         self.t1_ns_record.content = 'nsrv1.{domain-name}'
         self.t1_ns_record.save()
@@ -162,7 +165,10 @@ class TestTemplates(TestCase):
     def test_template_add(self):
         """Records are added if the domain template gets a new record
         template"""
-        domain = Domain(name='example.com', template=self.domain_template1)
+        domain = Domain(
+            name='example.com', template=self.domain_template1,
+            reverse_template=self.reverse_template,
+        )
         domain.save()
         self.t1_ns2_record = RecordTemplateFactory(
             type='NS',
@@ -170,7 +176,7 @@ class TestTemplates(TestCase):
             content=(
                 'ns2.{domain-name}'
             ),
-            domain_template = self.domain_template1,
+            domain_template=self.domain_template1,
         )
         self.assertEqual(domain.record_set.count(), 4)
         assert_does_exist(Record, domain=domain, content='ns2.example.com')

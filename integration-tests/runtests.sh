@@ -4,4 +4,9 @@ do
     sleep 3
 done
 
+
+cd dnsaas-source &&\
+make flake &&\
+python3.4 manage.py test &&\
+cd ../integration-tests &&\
 nosetests

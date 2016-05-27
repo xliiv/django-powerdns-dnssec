@@ -2,14 +2,22 @@
 ---
 
 runner:
-    build: .
+    build: ".."
+    dockerfile: 'Dockerfile-integration'
+    environment:
+        - DNSAAS_DB_USER=root
+        - DNSAAS_DB_PASSWORD=root
+        - DNSAAS_DB_HOST=db
     links:
         - "dnsaas:dnsaas"
         - "pdns:pdns"
+        - "mysql:db"
 dnsaas:
     build: ".."
     links: 
         - mysql:db
+    environment:
+        - DNSAAS_DB_HOST=db
 pdns:
     image: "zefciu/pdns"
     links:
