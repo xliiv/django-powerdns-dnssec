@@ -156,6 +156,7 @@ class RecordViewSet(OwnerViewSet):
         serializer.is_valid(raise_exception=True)
 
         from powerdns.models.requests import RequestStates
+        # TODO:: this should be also in delete
         if (
             not request.user.is_superuser and
             serializer.instance.any_request_opened
@@ -213,9 +214,8 @@ class RecordViewSet(OwnerViewSet):
         )
         delete_request.save()
         auto_accept = (
-            self.request.user.is_superuser or
-            instance.domain.owner == request.user or
-            instance.owner == request.user
+            instance.domain.can_auto_accept(self.request.user) and
+            instance.can_auto_accept(request.user)
         )
         if auto_accept:
             instance.delete()
