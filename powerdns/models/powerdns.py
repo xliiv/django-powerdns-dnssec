@@ -609,6 +609,15 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             owner=self.owner,
         )
 
+    def can_auto_accept(self, user):
+        return (
+            user.is_superuser or
+            user == self.owner or
+            user.id in self.authorisations.values_list(
+                'authorised', flat=True
+            )
+        )
+
 
 rules.add_perm('powerdns.add_record', rules.is_authenticated)
 rules.add_perm('powerdns.change_record', rules.is_authenticated)

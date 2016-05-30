@@ -186,15 +186,11 @@ class RecordViewSet(OwnerViewSet):
         ]
         record_request.copy_records_data(data_to_copy)
         record_request.save()
-        auto_accept = (
-            self.request.user.is_superuser or
-            serializer.instance.domain.unrestricted or
-            self.request.user == serializer.instance.domain.owner or
-            request.user == instance.owner or
-            request.user.id in instance.authorisations.values_list(
-                'authorised', flat=True)
-        )
-        if auto_accept:
+
+        if (
+            serializer.instance.domain.can_auto_accept(self.request.user) and
+            instance.can_auto_accept(request.user)
+        ):
             record_request.accept_and_assign_record()
             code = status.HTTP_200_OK
             headers = {}
