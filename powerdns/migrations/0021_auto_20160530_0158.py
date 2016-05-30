@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='recordrequest',
             name='record',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='requests', help_text='The record for which a change is being requested', null=True, blank=True, to='powerdns.Record'),
+            field=models.ForeignKey(null=True, related_name='requests', on_delete=django.db.models.deletion.DO_NOTHING, blank=True, help_text='The record for which a change is being requested', db_constraint=False, to='powerdns.Record'),
         ),
     ]

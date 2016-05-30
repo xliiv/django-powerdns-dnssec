@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-import unittest
-
 from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
@@ -223,7 +221,6 @@ class TestRecords(BaseApiTestCase):
     #
     # deletion
     #
-    @unittest.skip("todo")
     def test_delete_record_when_superuser(self):
         self.client.login(username='super_user', password='super_user')
         record_request = RecordRequestFactory(
