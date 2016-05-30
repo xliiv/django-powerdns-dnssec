@@ -125,13 +125,9 @@ class RecordViewSet(OwnerViewSet):
         record_request.copy_records_data(serializer.validated_data.items())
         record_request.save()
 
-        auto_accept = (
-            self.request.user.is_superuser or
-            serializer.validated_data['domain'].unrestricted or
-            self.request.user == serializer.validated_data['domain'].owner or
-            request.user.id in serializer.validated_data['domain'].authorisations.values_list('authorised', flat=True)  # noqa
-        )
-        if auto_accept:
+        if serializer.validated_data['domain'].can_auto_accept(
+            request.user
+        ):
             serializer.save()
             record_request.record = serializer.instance
             record_request.state = RequestStates.ACCEPTED

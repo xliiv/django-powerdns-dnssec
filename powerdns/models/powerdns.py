@@ -284,6 +284,16 @@ class Domain(TimeTrackable, Owned, WithRequests):
         )
         yield (self.add_record_url(authorised), 'Add record')
 
+    def can_auto_accept(self, user):
+        return (
+            user.is_superuser or
+            self.unrestricted or
+            user == self.owner or
+            user.id in self.authorisations.values_list(
+                'authorised', flat=True
+            )
+        )
+
 
 rules.add_perm('powerdns', rules.is_authenticated)
 rules.add_perm('powerdns.add_domain', rules.is_superuser)
