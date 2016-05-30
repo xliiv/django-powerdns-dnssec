@@ -390,6 +390,19 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         verbose_name = _("record")
         verbose_name_plural = _("records")
 
+    @property
+    def any_request_opened(self):
+        #TODO:: docstring
+        from powerdns.models import RequestStates
+        states = self.requests.all().values_list('state', flat=True)
+        if not states:
+            any_opened = False
+        else:
+            any_opened = any(
+                [state == RequestStates.OPEN.id for state in states]
+            )
+        return any_opened
+
     def request_factory(operation):
         def result(self):
             def fmt(str_, **kwargs):

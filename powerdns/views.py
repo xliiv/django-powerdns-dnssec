@@ -157,6 +157,21 @@ class RecordViewSet(OwnerViewSet):
         )
         serializer.is_valid(raise_exception=True)
 
+        from powerdns.models.requests import RequestStates
+        if (
+            not request.user.is_superuser and
+            serializer.instance.any_request_opened
+        ):
+            record_request_ids = serializer.instance.requests.filter(
+                state=RequestStates.OPEN
+            ).values_list('id', flat=True)
+            return Response(
+                {'record_request_ids': record_request_ids},
+                # TODO:: what return code?
+                status=status.HTTP_303_SEE_OTHER,
+                headers={},
+            )
+
         record_request = RecordRequest(
             domain_id=serializer.instance.domain_id,
             owner_id=request.user.id,

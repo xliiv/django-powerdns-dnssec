@@ -88,6 +88,7 @@ class BaseApiTestCase(TestCase):
         self.client = APIClient()
 
 
+from powerdns.models.requests import RequestStates
 class TestRecords(BaseApiTestCase):
     def setUp(self):
         super().setUp()
@@ -196,6 +197,7 @@ class TestRecords(BaseApiTestCase):
     def test_update_record_when_cant_auto_accept(self):
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
+            state=RequestStates.ACCEPTED.id,
             record__auto_ptr=AutoPtrOptions.NEVER.id,
             record__type='A',
             record__name='blog.com',
@@ -216,6 +218,45 @@ class TestRecords(BaseApiTestCase):
                 record__id=record_request.record.id
             ).count(),
             2,
+        )
+
+    def test_dont_reject_update_when_already_exists_and_superuser(self):
+        self.client.login(username='super_user', password='super_user')
+        record_request = RecordRequestFactory(
+            state=RequestStates.OPEN.id,
+            record__auto_ptr=AutoPtrOptions.NEVER.id,
+            record__type='A',
+            record__name='blog.com',
+            record__content='192.168.1.0',
+        )
+        new_name = 'new-' + record_request.record.name
+        response = self.client.patch(
+            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
+            data={'name': new_name},
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_reject_update_when_already_exists(self):
+        self.client.login(username='regular_user1', password='regular_user1')
+        record_request = RecordRequestFactory(
+            state=RequestStates.OPEN.id,
+            record__auto_ptr=AutoPtrOptions.NEVER.id,
+            record__type='A',
+            record__name='blog.com',
+            record__content='192.168.1.0',
+        )
+        new_name = 'new-' + record_request.record.name
+        response = self.client.patch(
+            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
+            data={'name': new_name},
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_303_SEE_OTHER)
+        self.assertEqual(
+            response.data['record_request_ids'][0], record_request.id
         )
 
     #
