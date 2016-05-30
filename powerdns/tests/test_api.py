@@ -295,6 +295,7 @@ class TestRecords(BaseApiTestCase):
     def test_delete_record_when_cant_auto_accept(self):
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
+            state=RequestStates.ACCEPTED.id,
             record__auto_ptr=AutoPtrOptions.NEVER.id,
             record__type='A',
             record__name='blog.com',

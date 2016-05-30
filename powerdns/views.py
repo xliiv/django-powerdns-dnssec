@@ -155,17 +155,16 @@ class RecordViewSet(OwnerViewSet):
         )
         serializer.is_valid(raise_exception=True)
 
-        from powerdns.models.requests import RequestStates
-        # TODO:: this should be also in delete
         if (
-            not request.user.is_superuser and
-            serializer.instance.any_request_opened
+            serializer.instance.opened_requests and
+            not request.user.is_superuser
         ):
-            record_request_ids = serializer.instance.requests.filter(
-                state=RequestStates.OPEN
-            ).values_list('id', flat=True)
             return Response(
-                {'record_request_ids': record_request_ids},
+                {'record_request_ids':
+                    serializer.instance.opened_requests.values_list(
+                        'id', flat=True
+                    )
+                 },
                 # TODO:: what return code?
                 status=status.HTTP_303_SEE_OTHER,
                 headers={},
@@ -209,6 +208,22 @@ class RecordViewSet(OwnerViewSet):
             return super().destroy(request, *args, **kwargs)
 
         instance = self.get_object()
+
+        if (
+            instance.opened_requests and
+            not request.user.is_superuser
+        ):
+            return Response(
+                {'record_request_ids':
+                    instance.opened_requests.values_list(
+                        'id', flat=True
+                    )
+                 },
+                # TODO:: what return code?
+                status=status.HTTP_303_SEE_OTHER,
+                headers={},
+            )
+
         delete_request = DeleteRequest(
             owner=self.request.user, target=instance,
         )

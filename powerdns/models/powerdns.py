@@ -401,17 +401,9 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         verbose_name_plural = _("records")
 
     @property
-    def any_request_opened(self):
-        """Checks if Record has any Requests which their state=OPEN"""
+    def opened_requests(self):
         from powerdns.models import RequestStates
-        states = self.requests.all().values_list('state', flat=True)
-        if not states:
-            any_opened = False
-        else:
-            any_opened = any(
-                [state == RequestStates.OPEN.id for state in states]
-            )
-        return any_opened
+        return self.requests.filter(state=RequestStates.OPEN.id).all()
 
     def request_factory(operation):
         def result(self):
