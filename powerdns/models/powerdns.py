@@ -392,7 +392,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
 
     @property
     def any_request_opened(self):
-        #TODO:: docstring
+        """Checks if Record has any Requests which their state=OPEN"""
         from powerdns.models import RequestStates
         states = self.requests.all().values_list('state', flat=True)
         if not states:

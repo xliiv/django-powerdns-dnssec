@@ -25,6 +25,7 @@ from rest_framework.permissions import DjangoObjectPermissions
 from rest_framework.response import Response
 
 from powerdns.models.powerdns import can_delete, can_edit
+from powerdns.models.requests import RequestStates
 from powerdns.serializers import (
     CryptoKeySerializer,
     DomainMetadataSerializer,
@@ -128,12 +129,13 @@ class RecordViewSet(OwnerViewSet):
             self.request.user.is_superuser or
             serializer.validated_data['domain'].unrestricted or
             self.request.user == serializer.validated_data['domain'].owner or
-            request.user.id in serializer.validated_data['domain'].authorisations.values_list('authorised', flat=True) # noqa
+            request.user.id in serializer.validated_data['domain'].authorisations.values_list('authorised', flat=True)  # noqa
         )
         if auto_accept:
             serializer.save()
             record_request.record = serializer.instance
-            record_request.accept()
+            record_request.state = RequestStates.ACCEPTED
+            record_request.save()
             data = serializer.data
             code = status.HTTP_201_CREATED
             headers = {}
@@ -211,7 +213,7 @@ class RecordViewSet(OwnerViewSet):
 
     def destroy(self, request, *args, **kwargs):
         if self.request.version == 'v1':
-            return super().create(request, *args, **kwargs)
+            return super().destroy(request, *args, **kwargs)
 
         instance = self.get_object()
         delete_request = DeleteRequest(

@@ -9,9 +9,6 @@ from powerdns.tests.utils import (
 
 
 class TestModels(TestCase):
-    def setUp(self):
-        super().setUp()
-
     def test_any_opened_request_is_false_when_no_requests(self):
         record = RecordFactory()
         self.assertEqual(record.any_request_opened, False)

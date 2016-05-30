@@ -9,7 +9,11 @@ from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory
 
 from powerdns.models.powerdns import Record
-from powerdns.models.requests import DeleteRequest, RecordRequest
+from powerdns.models.requests import (
+    DeleteRequest,
+    RecordRequest,
+    RequestStates,
+)
 from powerdns.tests.utils import (
     DomainFactory,
     DomainTemplateFactory,
@@ -88,7 +92,6 @@ class BaseApiTestCase(TestCase):
         self.client = APIClient()
 
 
-from powerdns.models.requests import RequestStates
 class TestRecords(BaseApiTestCase):
     def setUp(self):
         super().setUp()
@@ -129,7 +132,7 @@ class TestRecords(BaseApiTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_record_is_not_created_when_domain_is_other(self):
+    def test_record_is_not_created_when_domain_is_not_owned(self):
         self.client.login(username='regular_user1', password='regular_user1')
         domain = DomainFactory(name='example.com', owner=self.regular_user2)
         data = {
@@ -220,24 +223,6 @@ class TestRecords(BaseApiTestCase):
             2,
         )
 
-    def test_dont_reject_update_when_already_exists_and_superuser(self):
-        self.client.login(username='super_user', password='super_user')
-        record_request = RecordRequestFactory(
-            state=RequestStates.OPEN.id,
-            record__auto_ptr=AutoPtrOptions.NEVER.id,
-            record__type='A',
-            record__name='blog.com',
-            record__content='192.168.1.0',
-        )
-        new_name = 'new-' + record_request.record.name
-        response = self.client.patch(
-            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
-            data={'name': new_name},
-            format='json',
-            **{'HTTP_ACCEPT': 'application/json; version=v2'}
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
     def test_reject_update_when_already_exists(self):
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
@@ -258,6 +243,24 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(
             response.data['record_request_ids'][0], record_request.id
         )
+
+    def test_dont_reject_update_when_already_exists_but_superuser(self):
+        self.client.login(username='super_user', password='super_user')
+        record_request = RecordRequestFactory(
+            state=RequestStates.OPEN.id,
+            record__auto_ptr=AutoPtrOptions.NEVER.id,
+            record__type='A',
+            record__name='blog.com',
+            record__content='192.168.1.0',
+        )
+        new_name = 'new-' + record_request.record.name
+        response = self.client.patch(
+            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
+            data={'name': new_name},
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     #
     # deletion
