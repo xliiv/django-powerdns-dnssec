@@ -165,8 +165,7 @@ class RecordViewSet(OwnerViewSet):
                         'id', flat=True
                     )
                  },
-                # TODO:: what return code?
-                status=status.HTTP_303_SEE_OTHER,
+                status=status.HTTP_412_PRECONDITION_FAILED,
                 headers={},
             )
 
@@ -219,8 +218,7 @@ class RecordViewSet(OwnerViewSet):
                         'id', flat=True
                     )
                  },
-                # TODO:: what return code?
-                status=status.HTTP_303_SEE_OTHER,
+                status=status.HTTP_412_PRECONDITION_FAILED,
                 headers={},
             )
 
@@ -228,12 +226,11 @@ class RecordViewSet(OwnerViewSet):
             owner=self.request.user, target=instance,
         )
         delete_request.save()
-        auto_accept = (
+        if (
             instance.domain.can_auto_accept(self.request.user) and
             instance.can_auto_accept(request.user)
-        )
-        if auto_accept:
-            instance.delete()
+        ):
+            delete_request.accept()
             code = status.HTTP_204_NO_CONTENT
         else:
             code = status.HTTP_202_ACCEPTED

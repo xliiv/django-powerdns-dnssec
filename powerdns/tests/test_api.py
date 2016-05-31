@@ -172,31 +172,6 @@ class TestRecords(BaseApiTestCase):
             RecordRequest.objects.filter(record__id=record.id).count(), 1
         )
 
-    def test_update_record_when_recordrequest_exists(self):
-        self.client.login(username='super_user', password='super_user')
-        record_request = RecordRequestFactory(
-            record__auto_ptr=AutoPtrOptions.NEVER.id,
-            record__type='A',
-            record__name='blog.com',
-            record__content='192.168.1.0',
-        )
-        new_name = 'new-' + record_request.record.name
-        response = self.client.patch(
-            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
-            data={'name': new_name},
-            format='json',
-            **{'HTTP_ACCEPT': 'application/json; version=v2'}
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        record_request.record.refresh_from_db()
-        self.assertEqual(record_request.record.name, new_name)
-        self.assertEqual(
-            RecordRequest.objects.filter(
-                record__id=record_request.record.id
-            ).count(),
-            2,
-        )
-
     def test_update_record_when_cant_auto_accept(self):
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
@@ -223,7 +198,7 @@ class TestRecords(BaseApiTestCase):
             2,
         )
 
-    def test_reject_update_when_already_exists(self):
+    def test_reject_update_when_request_already_exists(self):
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
             state=RequestStates.OPEN.id,
@@ -239,12 +214,16 @@ class TestRecords(BaseApiTestCase):
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
-        self.assertEqual(response.status_code, status.HTTP_303_SEE_OTHER)
+        self.assertEqual(
+            response.status_code, status.HTTP_412_PRECONDITION_FAILED,
+        )
         self.assertEqual(
             response.data['record_request_ids'][0], record_request.id
         )
 
-    def test_dont_reject_update_when_already_exists_but_superuser(self):
+    def test_dont_reject_update_when_request_already_exists_but_superuser(
+        self
+    ):
         self.client.login(username='super_user', password='super_user')
         record_request = RecordRequestFactory(
             state=RequestStates.OPEN.id,
@@ -261,13 +240,23 @@ class TestRecords(BaseApiTestCase):
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        record_request.record.refresh_from_db()
+        self.assertEqual(record_request.record.name, new_name)
+        self.assertEqual(
+            RecordRequest.objects.filter(
+                record__id=record_request.record.id
+            ).count(),
+            2,
+        )
 
     #
     # deletion
     #
-    def test_delete_record_when_superuser(self):
+    def test_deletion_1(self):
+        """Superuser can delete record with OPENED record-requests"""
         self.client.login(username='super_user', password='super_user')
         record_request = RecordRequestFactory(
+            state=RequestStates.OPEN.id,
             record__auto_ptr=AutoPtrOptions.NEVER.id,
             record__type='A',
             record__name='blog.com',
@@ -292,7 +281,8 @@ class TestRecords(BaseApiTestCase):
             DeleteRequest.objects.get(target_id=record_request.record_id)
         )
 
-    def test_delete_record_when_cant_auto_accept(self):
+    def test_deletion_2(self):
+        """Regular user can't delete record"""
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
             state=RequestStates.ACCEPTED.id,
@@ -313,4 +303,31 @@ class TestRecords(BaseApiTestCase):
                 target_id=record_request.record.id
             ).count(),
             1,
+        )
+
+    def test_deletion_3(self):
+        """Regular user can't delete record when OPENED record-request
+        exists"""
+        self.client.login(username='regular_user1', password='regular_user1')
+        record_request = RecordRequestFactory(
+            state=RequestStates.OPEN.id,
+            record__auto_ptr=AutoPtrOptions.NEVER.id,
+            record__type='A',
+            record__name='blog.com',
+            record__content='192.168.1.0',
+        )
+        response = self.client.delete(
+            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(
+            response.status_code, status.HTTP_412_PRECONDITION_FAILED,
+        )
+        self.assertTrue(Record.objects.get(id=record_request.record.id))
+        self.assertEqual(
+            DeleteRequest.objects.filter(
+                target_id=record_request.record.id
+            ).count(),
+            0,
         )
