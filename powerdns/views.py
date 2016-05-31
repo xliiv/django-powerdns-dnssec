@@ -39,7 +39,7 @@ from powerdns.serializers import (
     TsigKeysTemplateSerializer,
 )
 from powerdns.utils import VERSION, to_reverse
-from powerdns.models.tsigkeys import TsigKeys
+from powerdns.models.tsigkeys import TsigKey
 
 
 log = logging.getLogger(__name__)
@@ -295,7 +295,7 @@ class RecordTemplateViewSet(FiltersMixin, ModelViewSet):
 
 class TsigKeysViewSet(FiltersMixin, ModelViewSet):
 
-    queryset = TsigKeys.objects.all()
+    queryset = TsigKey.objects.all()
     serializer_class = TsigKeysTemplateSerializer
     filter_fields = ('name', 'secret')
 
