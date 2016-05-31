@@ -8,13 +8,13 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('powerdns', '0021_tsigkeys'),
+        ('powerdns', '0021_tsigkey'),
     ]
 
     operations = [
         migrations.AlterField(
             model_name='recordrequest',
             name='record',
-            field=models.ForeignKey(related_name='requests', to='powerdns.Record', db_constraint=False, help_text='The record for which a change is being requested', null=True, on_delete=django.db.models.deletion.DO_NOTHING, blank=True),
+            field=models.ForeignKey(help_text='The record for which a change is being requested', blank=True, on_delete=django.db.models.deletion.DO_NOTHING, to='powerdns.Record', related_name='requests', db_constraint=False, null=True),
         ),
     ]
