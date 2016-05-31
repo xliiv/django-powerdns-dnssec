@@ -252,7 +252,7 @@ class TestRecords(BaseApiTestCase):
     #
     # deletion
     #
-    def test_deletion_1(self):
+    def test_superuser_deletes_records_with_opened_request(self):
         """Superuser can delete record with OPENED record-requests"""
         self.client.login(username='super_user', password='super_user')
         record_request = RecordRequestFactory(
@@ -281,7 +281,7 @@ class TestRecords(BaseApiTestCase):
             DeleteRequest.objects.get(target_id=record_request.record_id)
         )
 
-    def test_deletion_2(self):
+    def test_user_cant_delete_record(self):
         """Regular user can't delete record"""
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
@@ -305,7 +305,7 @@ class TestRecords(BaseApiTestCase):
             1,
         )
 
-    def test_deletion_3(self):
+    def test_user_cant_delete_record_with_opened_request(self):
         """Regular user can't delete record when OPENED record-request
         exists"""
         self.client.login(username='regular_user1', password='regular_user1')
