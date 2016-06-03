@@ -58,7 +58,6 @@ class RecordSerializer(OwnerSerializer):
     class Meta:
         model = Record
         read_only_fields = ('change_date', 'ordername',)
-        fields = ('name', 'domain')
 
     domain = PrimaryKeyRelatedField(
         queryset=Domain.objects.all(),
