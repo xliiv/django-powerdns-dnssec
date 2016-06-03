@@ -172,7 +172,6 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.DjangoObjectPermissions',
@@ -184,6 +183,13 @@ REST_FRAMEWORK = {
     'DEFAULT_VERSION': 'v1',
     'PAGE_SIZE': 50,
 }
+
+if TESTING:
+    REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    )
 
 
 # A sample logging configuration. The only tangible logging
