@@ -22,7 +22,7 @@ from powerdns.tests.utils import (
     UserFactory
 )
 from powerdns.utils import AutoPtrOptions
-from powerdns.views import RecordViewSet
+from dnsaas.api.v2.views import RecordViewSet
 
 
 class TestApi(TestCase):
@@ -108,12 +108,12 @@ class TestRecords(BaseApiTestCase):
         domain = DomainFactory(name='example.com', owner=self.super_user)
         data = {
             'type': 'cname'.upper(),
-            'domain': '/api/domains/' + str(domain.id) + '/',
+            'domain': domain.id,
             'name': 'example.com',
             'content': '192.168.0.1',
         }
         response = self.client.post(
-            reverse('record-list'), data, format='json',
+            reverse('api:v2:record-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -123,12 +123,12 @@ class TestRecords(BaseApiTestCase):
         domain = DomainFactory(name='example.com', owner=self.regular_user1)
         data = {
             'type': 'cname'.upper(),
-            'domain': '/api/domains/' + str(domain.id) + '/',
+            'domain': domain.id,
             'name': 'example.com',
             'content': '192.168.0.1',
         }
         response = self.client.post(
-            reverse('record-list'), data, format='json',
+            reverse('api:v2:record-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -138,12 +138,12 @@ class TestRecords(BaseApiTestCase):
         domain = DomainFactory(name='example.com', owner=self.regular_user2)
         data = {
             'type': 'cname'.upper(),
-            'domain': '/api/domains/' + str(domain.id) + '/',
+            'domain': domain.id,
             'name': 'example.com',
             'content': '192.168.0.1',
         }
         response = self.client.post(
-            reverse('record-list'), data, format='json',
+            reverse('api:v2:record-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
@@ -161,7 +161,7 @@ class TestRecords(BaseApiTestCase):
         )
         new_name = 'new-' + record.name
         response = self.client.patch(
-            reverse('record-detail', kwargs={'pk': record.pk}),
+            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
             data={'name': new_name},
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
@@ -184,7 +184,10 @@ class TestRecords(BaseApiTestCase):
         )
         new_name = 'new-' + record_request.record.name
         response = self.client.patch(
-            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record_request.record.pk},
+            ),
             data={'name': new_name},
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
@@ -210,7 +213,10 @@ class TestRecords(BaseApiTestCase):
         )
         new_name = 'new-' + record_request.record.name
         response = self.client.patch(
-            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record_request.record.pk},
+            ),
             data={'name': new_name},
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
@@ -235,7 +241,10 @@ class TestRecords(BaseApiTestCase):
         )
         new_name = 'new-' + record_request.record.name
         response = self.client.patch(
-            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record_request.record.pk},
+            ),
             data={'name': new_name},
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
@@ -264,7 +273,10 @@ class TestRecords(BaseApiTestCase):
             record__content='192.168.1.0',
         )
         response = self.client.delete(
-            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record_request.record.pk},
+            ),
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
@@ -293,7 +305,10 @@ class TestRecords(BaseApiTestCase):
             record__content='192.168.1.0',
         )
         response = self.client.delete(
-            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record_request.record.pk},
+            ),
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
@@ -318,7 +333,10 @@ class TestRecords(BaseApiTestCase):
             record__content='192.168.1.0',
         )
         response = self.client.delete(
-            reverse('record-detail', kwargs={'pk': record_request.record.pk}),
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record_request.record.pk},
+            ),
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
