@@ -17,7 +17,6 @@ from rest_framework.serializers import(
     ModelSerializer,
     SlugRelatedField,
 )
-from powerdns.utils import DomainForRecordValidator
 from powerdns.models.tsigkeys import TsigKey
 
 
@@ -61,7 +60,6 @@ class RecordSerializer(OwnerSerializer):
 
     domain = PrimaryKeyRelatedField(
         queryset=Domain.objects.all(),
-        #view_name='domain-detail',
     )
 
 

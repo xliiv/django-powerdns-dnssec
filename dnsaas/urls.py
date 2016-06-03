@@ -3,7 +3,6 @@ import autocomplete_light.shortcuts as al
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from django.conf import settings
-from rest_framework.routers import DefaultRouter
 
 from powerdns.utils import VERSION
 from powerdns.views import (
@@ -11,16 +10,7 @@ from powerdns.views import (
     accept_record_request,
     accept_delete_request,
     obtain_auth_token,
-    #CryptoKeyViewSet,
-    #DomainMetadataViewSet,
-    #DomainViewSet,
     HomeView,
-    #RecordViewSet,
-    #SuperMasterViewSet,
-    #DomainTemplateViewSet,
-    #RecordTemplateViewSet,
-    #RecordRequestsViewSet,
-    #TsigKeysViewSet,
 )
 from ui.views import start_page
 

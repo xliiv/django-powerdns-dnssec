@@ -4,8 +4,6 @@ import logging
 
 from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.shortcuts import redirect
-from django.views.generic.base import TemplateView
 
 from powerdns.models import (
     CryptoKey,
@@ -13,19 +11,17 @@ from powerdns.models import (
     Domain,
     DomainMetadata,
     DomainTemplate,
-    DomainRequest,
     Record,
     RecordTemplate,
     RecordRequest,
     SuperMaster,
 )
-from rest_framework import exceptions, status
+from rest_framework import status
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import DjangoObjectPermissions
 from rest_framework.response import Response
 
-from powerdns.models.powerdns import can_delete, can_edit
 from powerdns.models.requests import RequestStates
 from .serializers import (
     CryptoKeySerializer,
@@ -118,7 +114,8 @@ class RecordViewSet(OwnerViewSet):
             code = status.HTTP_202_ACCEPTED
             headers = {
                 'Location': reverse(
-                    'api:v2:recordrequest-detail', kwargs={'pk': record_request.id}
+                    'api:v2:recordrequest-detail',
+                    kwargs={'pk': record_request.id},
                 )
             }
         return Response(data, status=code, headers=headers)
@@ -174,7 +171,8 @@ class RecordViewSet(OwnerViewSet):
             code = status.HTTP_202_ACCEPTED
             headers = {
                 'Location': reverse(
-                    'api:v2:recordrequest-detail', kwargs={'pk': record_request.id}
+                    'api:v2:recordrequest-detail',
+                    kwargs={'pk': record_request.id},
                 )
             }
         return Response(serializer.data, status=code, headers=headers)

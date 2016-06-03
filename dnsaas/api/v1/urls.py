@@ -7,7 +7,6 @@ from .views import (
     RecordViewSet,
     SuperMasterViewSet,
     DomainTemplateViewSet,
-    RecordTemplateViewSet,
     TsigKeysViewSet,
 )
 
@@ -18,6 +17,5 @@ router.register(r'crypto-keys', CryptoKeyViewSet)
 router.register(r'domains-metadata', DomainMetadataViewSet)
 router.register(r'super-masters', SuperMasterViewSet)
 router.register(r'domain-templates', DomainTemplateViewSet)
-#router.register(r'record-templates', RecordTemplateViewSet)
 router.register(r'tsigkeys', TsigKeysViewSet)
 urlpatterns = router.urls

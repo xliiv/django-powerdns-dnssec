@@ -1,22 +1,18 @@
 """Views and viewsets for DNSaaS API"""
 
-from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.shortcuts import redirect
-from django.views.generic.base import TemplateView
 
 from powerdns.models import (
     CryptoKey,
-    DeleteRequest,
     Domain,
     DomainMetadata,
     DomainTemplate,
-    DomainRequest,
     Record,
     RecordTemplate,
-    RecordRequest,
     SuperMaster,
 )
+from powerdns.models.powerdns import can_delete, can_edit
+from rest_framework import exceptions
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import DjangoObjectPermissions
@@ -31,7 +27,7 @@ from .serializers import (
     SuperMasterSerializer,
     TsigKeysTemplateSerializer,
 )
-from powerdns.utils import VERSION, to_reverse
+from powerdns.utils import to_reverse
 from powerdns.models.tsigkeys import TsigKey
 
 
@@ -76,10 +72,6 @@ class RecordViewSet(OwnerViewSet):
 
     def get_object(self):
         obj = super().get_object()
-
-        from rest_framework import exceptions
-        from powerdns.models.powerdns import can_delete, can_edit
-        #TODO:: explain why permission check on view
         if (
             self.request._request.method in ('PATCH', 'PUT') and
             not can_edit(self.request.user, obj)
@@ -152,40 +144,3 @@ class TsigKeysViewSet(FiltersMixin, ModelViewSet):
     queryset = TsigKey.objects.all()
     serializer_class = TsigKeysTemplateSerializer
     filter_fields = ('name', 'secret')
-
-
-class HomeView(TemplateView):
-
-    """
-    Homepage. This page should point user to API or admin site. This package
-    will provide some minimal homepage template. The administrators of
-    DNSaaS solutions are encouraged however to create their own ones.
-    """
-
-    template_name = "powerdns/home.html"
-
-    def get_context_data(self, **kwargs):
-
-        return {
-            'version': VERSION,
-        }
-
-
-def accept_request_factory(request_model, model_name=None):
-    def result(request, pk):
-        request = request_model.objects.get(pk=pk)
-        domain = request.accept()
-        if model_name:
-            return redirect(
-                reverse(
-                    'admin:powerdns_{}_change'.format(model_name),
-                    args=(domain.pk,)
-                )
-            )
-        else:
-            return redirect(reverse('admin:index'))
-    return result
-
-accept_domain_request = accept_request_factory(DomainRequest, 'domain')
-accept_record_request = accept_request_factory(RecordRequest, 'record')
-accept_delete_request = accept_request_factory(DeleteRequest)
