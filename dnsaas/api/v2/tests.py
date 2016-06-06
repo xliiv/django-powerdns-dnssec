@@ -169,9 +169,25 @@ class TestRecords(BaseApiTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
-            response.data['non_field_errors'],
-            ['IP address can not be private.']
+            response.data['content'], ['IP address cannot be private.']
         )
+
+    def test_user_is_set_correct_when_adding_record(self):
+        self.client.login(username='super_user', password='super_user')
+        domain = DomainFactory(name='example.com', owner=self.super_user)
+        data = {
+            'type': 'cname'.upper(),
+            'domain': domain.id,
+            'name': 'example.com',
+            'content': '192.168.0.1',
+        }
+        response = self.client.post(
+            reverse('api:v2:record-list'), data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['owner'], self.super_user.username)
+
 
     #
     # updates
@@ -283,6 +299,25 @@ class TestRecords(BaseApiTestCase):
             ).count(),
             2,
         )
+
+    def test_user_is_set_correct_when_updating_record(self):
+        self.client.login(username='super_user', password='super_user')
+        record = RecordFactory(
+            auto_ptr=AutoPtrOptions.NEVER.id,
+            type='A',
+            name='blog.com',
+            content='192.168.1.0',
+        )
+        new_name = 'new-' + record.name
+        response = self.client.patch(
+            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            data={'name': new_name},
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        record.refresh_from_db()
+        self.assertEqual(record.owner, self.super_user)
 
     #
     # deletion

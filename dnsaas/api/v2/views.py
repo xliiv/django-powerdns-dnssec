@@ -89,14 +89,15 @@ class RecordViewSet(OwnerViewSet):
     search_fields = filter_fields
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        data['owner'] = request.user.username
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
 
-        record_request = RecordRequest(
-            domain_id=serializer.validated_data['domain'],
-            owner_id=request.user.id,
-        )
+        record_request = RecordRequest()
         record_request.copy_records_data(serializer.validated_data.items())
+        record_request.owner = request.user
+        record_request.target_owner = request.user
         record_request.save()
 
         if serializer.validated_data['domain'].can_auto_accept(
@@ -141,11 +142,7 @@ class RecordViewSet(OwnerViewSet):
                 headers={},
             )
 
-        record_request = RecordRequest(
-            domain_id=serializer.instance.domain_id,
-            owner_id=request.user.id,
-            record_id=serializer.instance.id,
-        )
+        record_request = RecordRequest()
         # in validated_data lands fields required by model, even if they
         # weren't changed, so filter it by matching validated vs initial
         data_to_copy = [
@@ -156,6 +153,10 @@ class RecordViewSet(OwnerViewSet):
             )
         ]
         record_request.copy_records_data(data_to_copy)
+        record_request.domain = serializer.instance.domain
+        record_request.owner = request.user
+        record_request.target_owner = request.user
+        record_request.record = serializer.instance
         record_request.save()
 
         if (

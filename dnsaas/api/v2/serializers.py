@@ -87,7 +87,7 @@ class RecordSerializer(OwnerSerializer):
             address = ipaddress.ip_address(content)
             if address.is_private:
                 raise serializers.ValidationError(
-                    {'content': ['IP address can not be private.']}
+                    {'content': ['IP address cannot be private.']}
                 )
 
         return attrs
