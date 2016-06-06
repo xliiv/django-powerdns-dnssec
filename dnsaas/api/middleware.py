@@ -13,6 +13,14 @@ def get_api_version(request):
 
 
 class VersionSwitch(object):
+    """
+    Translates API urls from AcceptHeaderVersioning to NamespaceVersioning
+
+    This allows API users to specify API version both, by:
+        - url, like '/api/v2/records',
+        - header, like '/api/records' + header:
+            'HTTP_ACCEPT': 'application/json; version=v2'
+    """
     def process_request(self, request):
         url = resolve(request.path_info)
         api_version = get_api_version(request)

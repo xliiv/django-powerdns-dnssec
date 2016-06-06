@@ -149,7 +149,6 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
 
     def test_validation_ip_address_if_domain_is_public(self):
-        #TODO::
         domain = DomainFactory(
             name='example2.com', owner=self.regular_user2,
             template=DomainTemplateFactory(

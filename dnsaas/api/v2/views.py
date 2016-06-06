@@ -127,8 +127,6 @@ class RecordViewSet(OwnerViewSet):
             instance, data=request.data, partial=partial,
         )
         serializer.is_valid(raise_exception=True)
-        print(serializer.validated_data)
-
         if (
             serializer.instance.opened_requests and
             not request.user.is_superuser
