@@ -377,6 +377,40 @@ class TestRecords(BaseApiTestCase):
         )
 
 
+class TestRecordValidation(BaseApiTestCase):
+    def test_validation_error_when_A_record_name_is_bad(self):
+        self.client.login(username='super_user', password='super_user')
+        domain = DomainFactory(name='example.com', owner=self.super_user)
+        data = {
+            'type': 'A',
+            'domain': domain.id,
+            'name': 'this-is-bad-bad-value-for-name',
+            'content': 'this-is-bad-bad-value-for-content',
+        }
+        response = self.client.post(
+            reverse('api:v2:record-list'), data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(response.data['name'])
+
+    def test_validation_error_when_A_record_content_is_bad(self):
+        self.client.login(username='super_user', password='super_user')
+        domain = DomainFactory(name='example.com', owner=self.super_user)
+        data = {
+            'type': 'A',
+            'domain': domain.id,
+            'name': 'www.' + domain.name,
+            'content': 'ThisIsBadBadValueForContent',
+        }
+        response = self.client.post(
+            reverse('api:v2:record-list'), data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(response.data['content'])
+
+
 class TestObtainAuthToken(TestCase):
 
     def setUp(self):  # noqa
