@@ -94,7 +94,9 @@ class RecordViewSet(OwnerViewSet):
         return data
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=self._set_owner(request.data))
+        serializer = self.get_serializer(
+            data=self._set_owner(request.data.copy())
+        )
         serializer.is_valid(raise_exception=True)
 
         record_request = RecordRequest()
@@ -125,14 +127,10 @@ class RecordViewSet(OwnerViewSet):
         return Response(data, status=code, headers=headers)
 
     def update(self, request, *args, **kwargs):
-        data = request.data.copy()
-        if 'owner' not in data:
-            data['owner'] = request.user.username
-
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(
-            instance, data=self._set_owner(request.data), partial=partial,
+            instance, data=request.data, partial=partial,
         )
         serializer.is_valid(raise_exception=True)
         if (
@@ -162,9 +160,8 @@ class RecordViewSet(OwnerViewSet):
         record_request.copy_records_data(data_to_copy)
         record_request.domain = serializer.instance.domain
         record_request.owner = request.user
-        record_request.target_owner = instance.owner
+        record_request.target_owner = serializer.validated_data.get('owner')
         record_request.record = serializer.instance
-        import ipdb; ipdb.set_trace()
         record_request.save()
 
         if (
