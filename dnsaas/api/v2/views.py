@@ -90,8 +90,7 @@ class RecordViewSet(OwnerViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        if not 'owner' in data:
-            # TODO: correct?
+        if 'owner' not in data:
             data['owner'] = request.user.username
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)

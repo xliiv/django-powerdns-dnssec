@@ -194,7 +194,6 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record_request.owner, self.super_user)
         self.assertEqual(record_request.target_owner, self.regular_user1)
 
-
     #
     # updates
     #
