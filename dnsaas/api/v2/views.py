@@ -162,7 +162,7 @@ class RecordViewSet(OwnerViewSet):
         record_request.save()
 
         if (
-            serializer.instance.domain.can_auto_accept(self.request.user) and
+            serializer.instance.domain.can_auto_accept(request.user) and
             instance.can_auto_accept(request.user)
         ):
             record_request.state = RequestStates.ACCEPTED
@@ -198,11 +198,11 @@ class RecordViewSet(OwnerViewSet):
             )
 
         delete_request = DeleteRequest(
-            owner=self.request.user, target=instance,
+            owner=request.user, target=instance,
         )
         delete_request.save()
         if (
-            instance.domain.can_auto_accept(self.request.user) and
+            instance.domain.can_auto_accept(request.user) and
             instance.can_auto_accept(request.user)
         ):
             delete_request.accept()
