@@ -167,6 +167,7 @@ class RecordViewSet(OwnerViewSet):
         ):
             record_request.state = RequestStates.ACCEPTED
             record_request.save()
+            serializer.save()
             code = status.HTTP_200_OK
             headers = {}
         else:
