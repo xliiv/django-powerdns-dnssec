@@ -180,13 +180,19 @@ class TestRecords(BaseApiTestCase):
             'domain': domain.id,
             'name': 'example.com',
             'content': '192.168.0.1',
+            'owner': self.regular_user1.username,
         }
         response = self.client.post(
             reverse('api:v2:record-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['owner'], self.super_user.username)
+        self.assertEqual(response.data['owner'], self.regular_user1.username)
+        record_request = RecordRequest.objects.get(
+            record__id=response.data['id'],
+        )
+        self.assertEqual(record_request.owner, self.super_user)
+        self.assertEqual(record_request.target_owner, self.regular_user1)
 
 
     #
@@ -307,6 +313,7 @@ class TestRecords(BaseApiTestCase):
             type='A',
             name='blog.com',
             content='192.168.1.0',
+            owner=self.regular_user1,
         )
         new_name = 'new-' + record.name
         response = self.client.patch(
@@ -317,7 +324,10 @@ class TestRecords(BaseApiTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         record.refresh_from_db()
-        self.assertEqual(record.owner, self.super_user)
+        self.assertEqual(record.owner, self.regular_user1)
+        record_request = RecordRequest.objects.get(record__id=record.id)
+        self.assertEqual(record_request.owner, self.super_user)
+        self.assertEqual(record_request.target_owner, self.regular_user1)
 
     #
     # deletion

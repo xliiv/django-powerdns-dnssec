@@ -90,14 +90,16 @@ class RecordViewSet(OwnerViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        data['owner'] = request.user.username
+        if not 'owner' in data:
+            # TODO: correct?
+            data['owner'] = request.user.username
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
 
         record_request = RecordRequest()
         record_request.copy_records_data(serializer.validated_data.items())
         record_request.owner = request.user
-        record_request.target_owner = request.user
+        record_request.target_owner = serializer.validated_data['owner']
         record_request.save()
 
         if serializer.validated_data['domain'].can_auto_accept(
@@ -155,7 +157,7 @@ class RecordViewSet(OwnerViewSet):
         record_request.copy_records_data(data_to_copy)
         record_request.domain = serializer.instance.domain
         record_request.owner = request.user
-        record_request.target_owner = request.user
+        record_request.target_owner = instance.owner
         record_request.record = serializer.instance
         record_request.save()
 
@@ -163,7 +165,8 @@ class RecordViewSet(OwnerViewSet):
             serializer.instance.domain.can_auto_accept(self.request.user) and
             instance.can_auto_accept(request.user)
         ):
-            record_request.accept_and_assign_record()
+            record_request.state = RequestStates.ACCEPTED
+            record_request.save()
             code = status.HTTP_200_OK
             headers = {}
         else:
