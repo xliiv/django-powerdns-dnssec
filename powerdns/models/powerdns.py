@@ -565,7 +565,14 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         super(Record, self).save(*args, **kwargs)
 
     def delete_ptr(self):
-        Record.objects.filter(depends_on=self).delete()
+        records = Record.objects.filter(type='A', content=self.content)
+        if records.count() == 1:
+            # no more A Record with this IP exists, delete PTR
+            Record.objects.filter(depends_on=self).delete()
+        elif records.count() > 1:
+            ptrs = Record.objects.filter(depends_on=self)
+            if ptrs:
+                self._reassign_ptr(ptrs[0])
 
     def create_ptr(self):
         """Creates a PTR record for A record creating a domain if necessary."""
@@ -595,7 +602,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         if not Record.objects.filter(
             type='PTR', name='.'.join([number, domain_name])
         ).exists():
-            #self.delete_ptr()  # removes old ptr if exists
+            self.delete_ptr()  # removes old ptr if exists
             obj, created = Record.objects.update_or_create(
                 type='PTR',
                 name='.'.join([number, domain_name]),
@@ -609,23 +616,24 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
                 )
             )
 
+    def _reassign_ptr(self, ptr_record):
+        other_records = Record.objects.filter(
+            models.Q(type='A') &
+            models.Q(content=self.content) & ~models.Q(auto_ptr=AutoPtrOptions.NEVER) & ~models.Q(id=self.id)  # noqa
+        )
+        if other_records:
+            ptr_record.depends_on = other_records[0]
+            ptr_record.save()
+
     def delete(self):
-        from django.db.models import Q
         try:
             connected_ptr = Record.objects.get(depends_on=self)
-        except Record.objects.DoesNotExist:
+        except Record.DoesNotExist:
             pass
         else:
             if self.type == 'A' and connected_ptr:
-                other_records = Record.objects.filter(
-                    Q(type='A') &
-                    Q(content=self.content) &
-                    ~Q(auto_ptr=AutoPtrOptions.NEVER) &
-                    ~Q(id=self.id)
-                )
-                if other_records:
-                    connected_ptr.depends_on = other_records[0]
-                    connected_ptr.save()
+                self._reassign_ptr(connected_ptr)
+
         super().delete()
 
     def can_auto_accept(self, user):
@@ -647,7 +655,6 @@ rules.add_perm('powerdns.delete_record', rules.is_authenticated)
 # updated. We update the SOA record, so the serial changes
 @receiver(post_delete, sender=Record, dispatch_uid='record_update_serial')
 def update_serial(sender, instance, **kwargs):
-    #print('\nupdate_serial', instance.__dict__)
     soa = instance.domain.get_soa()
     if soa:
         soa.save()
@@ -655,50 +662,10 @@ def update_serial(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Record, dispatch_uid='record_create_ptr')
 def create_ptr(sender, instance, **kwargs):
-    #print('\ncreate_ptr', instance.name, instance.__dict__)
-    #if instance.auto_ptr == AutoPtrOptions.NEVER or instance.type != 'A':
-    #    import ipdb
-    #    ipdb.set_trace()
-    #    instance.delete_ptr()
-    #    return
-    if instance.type == 'A':
-        instance.create_ptr()
-
-#@receiver(post_delete, sender=Record, dispatch_uid='record_delete_ptr')
-#def delete_ptr(sender, instance, **kwargs):
-#    #print('\ncreate_ptr', instance.name, instance.__dict__)
-#    #if instance.auto_ptr == AutoPtrOptions.NEVER or instance.type != 'A':
-#    #    import ipdb
-#    #    ipdb.set_trace()
-#    #    instance.delete_ptr()
-#    #    return
-#    if instance.type == 'A':
-#        domain_name, number = to_reverse(instance.content)
-#        name = '.'.join([number, domain_name]),
-#        Record.objects.filter(type='PTR', name=name).delete()
-
-
-#@receiver(post_delete, sender=Record, dispatch_uid='record_reassign_ptr')
-#def reassign_ptr(sender, instance, **kwargs):
-#    print('\nreassign_ptr', instance.content, instance.__dict__)
-#    # check if depends_on not null
-#    # find other records a with ip = instance.ip
-#    # reassign depeneds_on to next one
-#    from django.db.models import Q
-#    ptr_referencing_instance = Record.objects.filter(depends_on=instance)
-#    if instance.type == 'A' and ptr_referencing_instance:
-#        other_records = Record.objects.filter(
-#            Q(type='A') &
-#            Q(content=instance.content) &
-#            ~Q(auto_ptr=AutoPtrOptions.NEVER) &
-#            ~Q(id=instance.id)
-#        )
-#        print(other_records)
-#
-#    # if instance.auto_ptr == AutoPtrOptions.NEVER or instance.type != 'A':
-#    #     instance.delete_ptr()
-#    #     return
-#    # instance.create_ptr()
+    if instance.auto_ptr == AutoPtrOptions.NEVER or instance.type != 'A':
+        instance.delete_ptr()
+        return
+    instance.create_ptr()
 
 
 class SuperMaster(TimeTrackable):

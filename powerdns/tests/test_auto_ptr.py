@@ -246,5 +246,5 @@ class TestAutoPtr(TestCase):
             auto_ptr=AutoPtrOptions.ALWAYS,
         )
         self.assertEqual(Record.objects.get(type='PTR').depends_on, r1)
-        r1.delete()
+        r1.delete_ptr()
         self.assertEqual(Record.objects.get(type='PTR').depends_on, r2)
