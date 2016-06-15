@@ -565,7 +565,11 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         super(Record, self).save(*args, **kwargs)
 
     def delete_ptr(self):
-        Record.objects.filter(depends_on=self).delete()
+        if Record.objects.filter(
+            type='A', content=self.content,
+        ).count() == 1:
+            # no more A Record with this IP exists, delete PTR
+            Record.objects.filter(depends_on=self).delete()
 
     def create_ptr(self):
         """Creates a PTR record for A record creating a domain if necessary."""
@@ -591,17 +595,21 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         else:
             return
 
-        self.delete_ptr()
-        Record.objects.create(
-            type='PTR',
-            domain=domain,
-            name='.'.join([number, domain_name]),
-            content=self.name,
-            depends_on=self,
-            owner=self.owner,
-            ttl=self.ttl,
-            disabled=self.disabled,
-        )
+        # ensure 1 PTR (at the most) exist for the same IP
+        if not Record.objects.filter(
+            type='PTR', name='.'.join([number, domain_name])
+        ).exists():
+            self.delete_ptr()  # removes old ptr if exists
+            Record.objects.create(
+                type='PTR',
+                domain=domain,
+                name='.'.join([number, domain_name]),
+                content=self.name,
+                depends_on=self,
+                owner=self.owner,
+                ttl=self.ttl,
+                disabled=self.disabled,
+            )
 
     def can_auto_accept(self, user):
         return (
