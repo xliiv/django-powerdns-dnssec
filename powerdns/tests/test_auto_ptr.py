@@ -230,6 +230,25 @@ class TestAutoPtr(TestCase):
         a.delete()
         assert_not_exists(Record, name='1.1.168.192.in-addr.arpa', type='PTR')
 
+    def test_reassign_ptr_to_other_record_when_record_is_deleted(self):
+        r1 = RecordFactory(
+            domain=self.domain,
+            type='A',
+            name='ptr-creation.example.com',
+            content='192.168.1.1',
+            auto_ptr=AutoPtrOptions.ALWAYS,
+        )
+        r2 = RecordFactory(
+            domain=self.domain,
+            type='A',
+            name='ptr-reassign.example.com',
+            content='192.168.1.1',
+            auto_ptr=AutoPtrOptions.ALWAYS,
+        )
+        self.assertEqual(Record.objects.get(type='PTR').depends_on, r1)
+        r1.delete()
+        self.assertEqual(Record.objects.get(type='PTR').depends_on, r2)
+
     def test_removing_record_reassign_ptr_to_another_with_same_ip(self):
         r1 = RecordFactory(
             domain=self.domain,
