@@ -89,6 +89,10 @@ class TestAutoPtr(TestCase):
             auto_ptr=AutoPtrOptions.ALWAYS,
         )
         self.assertEqual(Record.objects.filter(type='PTR').count(), 1)
+        self.assertEqual(
+            Record.objects.get(type='PTR').content,
+            record_creating_ptr.name,
+        )
 
     def test_auto_ptr_edit(self):
         """PTR changes when A changes"""
@@ -225,6 +229,24 @@ class TestAutoPtr(TestCase):
         assert_does_exist(Record, name='1.1.168.192.in-addr.arpa', type='PTR')
         a.delete()
         assert_not_exists(Record, name='1.1.168.192.in-addr.arpa', type='PTR')
+
+    def test_ptr_autoremove2(self):
+        a1 = RecordFactory(
+            domain=self.domain,
+            type='A',
+            name='site.example.com',
+            content='192.168.1.1',
+            auto_ptr=AutoPtrOptions.ALWAYS,
+        )
+        RecordFactory(
+            domain=self.domain,
+            type='A',
+            name='blog.example.com',
+            content='192.168.1.1',
+            auto_ptr=AutoPtrOptions.ALWAYS,
+        )
+        a1.delete_ptr()
+        #TODO:: depends_on point to the next one
 
     def test_ptr_is_kept_when_other_record_with_same_ip_exists(self):
         a1 = RecordFactory(
