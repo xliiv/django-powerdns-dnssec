@@ -73,6 +73,23 @@ class TestAutoPtr(TestCase):
             owner=self.user,
         )
 
+    def test_dont_create_ptr_for_ip_when_already_has_one(self):
+        record_creating_ptr = RecordFactory(
+            domain=self.domain,
+            type='A',
+            name='ptr-creation.example.com',
+            content='192.168.1.1',
+            auto_ptr=AutoPtrOptions.ALWAYS,
+        )
+        RecordFactory(
+            domain=self.domain,
+            type='A',
+            name='ptr-reuse.example.com',
+            content=record_creating_ptr.content,
+            auto_ptr=AutoPtrOptions.ALWAYS,
+        )
+        self.assertEqual(Record.objects.filter(type='PTR').count(), 1)
+
     def test_auto_ptr_edit(self):
         """PTR changes when A changes"""
         record = RecordFactory(
