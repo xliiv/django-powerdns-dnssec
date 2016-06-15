@@ -230,39 +230,21 @@ class TestAutoPtr(TestCase):
         a.delete()
         assert_not_exists(Record, name='1.1.168.192.in-addr.arpa', type='PTR')
 
-    def test_ptr_autoremove2(self):
-        a1 = RecordFactory(
+    def test_removing_record_reassign_ptr_to_another_with_same_ip(self):
+        r1 = RecordFactory(
             domain=self.domain,
             type='A',
-            name='site.example.com',
+            name='ptr-creation.example.com',
             content='192.168.1.1',
             auto_ptr=AutoPtrOptions.ALWAYS,
         )
-        RecordFactory(
+        r2 = RecordFactory(
             domain=self.domain,
             type='A',
-            name='blog.example.com',
+            name='ptr-reassign.example.com',
             content='192.168.1.1',
             auto_ptr=AutoPtrOptions.ALWAYS,
         )
-        a1.delete_ptr()
-        #TODO:: depends_on point to the next one
-
-    def test_ptr_is_kept_when_other_record_with_same_ip_exists(self):
-        a1 = RecordFactory(
-            domain=self.domain,
-            type='A',
-            name='site.example.com',
-            content='192.168.1.1',
-            auto_ptr=AutoPtrOptions.ALWAYS,
-        )
-        RecordFactory(
-            domain=self.domain,
-            type='A',
-            name='blog.example.com',
-            content='192.168.1.1',
-            auto_ptr=AutoPtrOptions.ALWAYS,
-        )
-        self.assertEqual(Record.objects.filter(type='PTR').count(), 1)
-        a1.delete_ptr()
-        self.assertEqual(Record.objects.filter(type='PTR').count(), 1)
+        self.assertEqual(Record.objects.get(type='PTR').depends_on, r1)
+        r1.delete()
+        self.assertEqual(Record.objects.get(type='PTR').depends_on, r2)
