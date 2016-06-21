@@ -96,6 +96,25 @@ class TestAutoPtr(TestCase):
             name='1.1.168.192.in-addr.arpa',
         )
 
+    def test_record_update_wont_create_auto_ptr_when_never_set(self):
+        record = RecordFactory(
+            domain=self.domain,
+            type='A',
+            name='site.example.com',
+            content='192.168.1.1',
+            auto_ptr=AutoPtrOptions.NEVER,
+        )
+
+        self.assertEqual(
+            Record.objects.filter(name='1.1.168.192.in-addr.arpa').count(), 0
+        )
+        record.remarks = 'this change won\'t trigger ptr creation'
+        record.save()
+
+        self.assertEqual(
+            Record.objects.filter(name='1.1.168.192.in-addr.arpa').count(), 0
+        )
+
     def test_auto_ptr_fields_get_update_when_record_is_changed(self):
         record = RecordFactory(
             domain=self.domain,
@@ -170,7 +189,8 @@ class TestAutoPtr(TestCase):
         )
 
     def test_ptr_domain_not_exists(self):
-        """A PTR record with 'only-if-domain' is created if domain exists"""
+        """A PTR record with 'only-if-domain' is NOT created if domain
+        exists"""
         RecordFactory(
             domain=self.domain,
             type='A',
