@@ -46,6 +46,7 @@ class Request(Owned):
         null=True,
         blank=True
     )
+    last_change_json = models.TextField(null=True, blank=True)
 
     def reject(self):
         """Reject the request"""

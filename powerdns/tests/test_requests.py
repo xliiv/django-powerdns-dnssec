@@ -89,3 +89,18 @@ class TestRequests(TestCase):
         request.accept()
         assert_does_exist(Record, content='djangobb.example.com')
         assert_not_exists(Record, content='phpbb.example.com')
+
+# TODO:: good place for these tests
+class TestRecordRequests(TestCase):
+    """
+    These tests are written after conception has changed, to .. TODO::
+    """
+
+    def test_recordrequest_save_json_during_record_creation(self):
+        pass
+
+    def test_recordrequest_save_json_during_record_update(self):
+        pass
+
+    def test_recordrequest_save_json_during_record_deletion(self):
+        pass

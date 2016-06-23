@@ -128,11 +128,15 @@ class RecordViewSet(OwnerViewSet):
         )
         serializer.is_valid(raise_exception=True)
 
+        #TODO:: create
+        #rr(
+        #    data=record
+        #    history=record
+        #)
         record_request = RecordRequest()
         record_request.copy_records_data(serializer.validated_data.items())
         record_request.owner = request.user
         record_request.target_owner = serializer.validated_data['owner']
-        record_request.save()
 
         if serializer.validated_data['domain'].can_auto_accept(
             request.user
@@ -145,6 +149,7 @@ class RecordViewSet(OwnerViewSet):
             code = status.HTTP_201_CREATED
             headers = {}
         else:
+            record_request.save()
             data = {}
             code = status.HTTP_202_ACCEPTED
             headers = {
@@ -176,6 +181,11 @@ class RecordViewSet(OwnerViewSet):
                 headers={},
             )
 
+        #TODO:: create
+        #rr(
+        #    data=record
+        #    history=difference
+        #)
         record_request = RecordRequest()
         # in validated_data lands fields required by model, even if they
         # weren't changed, so filter it by matching validated vs initial
@@ -191,7 +201,6 @@ class RecordViewSet(OwnerViewSet):
         record_request.owner = request.user
         record_request.target_owner = serializer.validated_data.get('owner')
         record_request.record = serializer.instance
-        record_request.save()
 
         if (
             serializer.instance.domain.can_auto_accept(request.user) and
@@ -203,6 +212,7 @@ class RecordViewSet(OwnerViewSet):
             code = status.HTTP_200_OK
             headers = {}
         else:
+            record_request.save()
             code = status.HTTP_202_ACCEPTED
             headers = {
                 'Location': reverse(
@@ -228,11 +238,10 @@ class RecordViewSet(OwnerViewSet):
                 status=status.HTTP_412_PRECONDITION_FAILED,
                 headers={},
             )
-
         delete_request = DeleteRequest(
             owner=request.user, target=instance,
+            last_change_json=instance.to_json(),
         )
-        delete_request.save()
         if (
             instance.domain.can_auto_accept(request.user) and
             instance.can_auto_accept(request.user)
@@ -241,6 +250,7 @@ class RecordViewSet(OwnerViewSet):
             code = status.HTTP_204_NO_CONTENT
         else:
             code = status.HTTP_202_ACCEPTED
+        delete_request.save()
         return Response(status=code)
 
     def get_queryset(self):

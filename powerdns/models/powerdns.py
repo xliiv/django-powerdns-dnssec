@@ -567,6 +567,19 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
     def delete_ptr(self):
         Record.objects.filter(depends_on=self).delete()
 
+    def to_json(self):
+        import json
+        field_names = (
+            'id', 'owner', 'name', 'type', 'content', 'number', 'ttl', 'prio',
+            'remarks', 'auto_ptr',
+        )
+        to_json = {f: getattr(self, f) for f in field_names}
+        to_json.update({
+            'domain': self.domain.name,
+            'owner': self.owner.username,
+        })
+        return json.dumps(to_json)
+
     def create_ptr(self):
         """Creates a PTR record for A record creating a domain if necessary."""
         if self.type != 'A':
