@@ -136,11 +136,7 @@ class RecordViewSet(OwnerViewSet):
         if serializer.validated_data['domain'].can_auto_accept(
             request.user
         ):
-            # save initialize default values required by serializer.data()
-            serializer.save()
-            record_request.record = serializer.instance
-            record_request.accept()
-            #TODO:: check serializer.instance = record from .accept()
+            serializer.instance = record_request.accept()
             data = serializer.data
             code = status.HTTP_201_CREATED
             headers = {}

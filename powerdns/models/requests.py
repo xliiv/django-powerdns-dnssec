@@ -103,6 +103,7 @@ class ChangeCreateRequest(Request):
                 getattr(self, field_name)
             )
         object_.save()
+        self.assign_object(object_)
         self.state = RequestStates.ACCEPTED
         self.save()
         return object_
@@ -233,6 +234,9 @@ class DomainRequest(ChangeCreateRequest):
         else:
             return Domain()
 
+    def assign_object(self, obj):
+        self.domain = obj
+
 
 # rules.add_perm('powerdns', rules.is_authenticated)
 rules.add_perm('powerdns.add_domainrequest', rules.is_authenticated)
@@ -341,6 +345,10 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
         else:
             return Record(domain=self.domain, owner=self.owner)
 
+    def assign_object(self, obj):
+        self.record = obj
+
+    #TODO:: rm it?
     def accept_and_assign_record(self):
         record = self.accept()
         self.record = record
