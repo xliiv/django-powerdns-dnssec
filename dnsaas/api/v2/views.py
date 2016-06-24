@@ -185,10 +185,7 @@ class RecordViewSet(OwnerViewSet):
         record_request.copy_records_data(data_to_copy)
         record_request.domain = serializer.instance.domain
         record_request.owner = request.user
-        record_request.target_owner = (
-            serializer.validated_data.get('owner') or
-            serializer.instance.owner
-        )
+        record_request.target_owner = serializer.validated_data.get('owner')
         record_request.record = serializer.instance
 
         if (

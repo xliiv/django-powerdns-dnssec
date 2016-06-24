@@ -97,6 +97,8 @@ class ChangeCreateRequest(Request):
         for field_name in type(self).copy_fields:
             if field_name in self.ignore_fields:
                 continue
+            if field_name == 'target_owner' and not getattr(self, field_name):
+                continue
             setattr(
                 object_,
                 field_name[len(self.prefix):],

@@ -373,7 +373,7 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record.owner, self.regular_user1)
         record_request = RecordRequest.objects.get(record__id=record.id)
         self.assertEqual(record_request.owner, self.super_user)
-        self.assertEqual(record_request.target_owner, self.regular_user1)
+        self.assertEqual(record_request.target_owner, None)
 
     #
     # deletion
