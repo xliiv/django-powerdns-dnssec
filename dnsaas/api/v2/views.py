@@ -132,20 +132,20 @@ class RecordViewSet(OwnerViewSet):
         record_request.copy_records_data(serializer.validated_data.items())
         record_request.owner = request.user
         record_request.target_owner = serializer.validated_data['owner']
-        record_request.save()
 
         if serializer.validated_data['domain'].can_auto_accept(
             request.user
         ):
+            # need to initialize default value required by serializer.data()
             serializer.save()
             record_request.record = serializer.instance
-            record_request.state = RequestStates.ACCEPTED
-            record_request.save()
+            record_request = record_request.accept()
             data = serializer.data
             code = status.HTTP_201_CREATED
             headers = {}
         else:
             data = {}
+            record_request.save()
             code = status.HTTP_202_ACCEPTED
             headers = {
                 'Location': reverse(
