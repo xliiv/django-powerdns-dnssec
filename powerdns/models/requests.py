@@ -348,10 +348,4 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
     def assign_object(self, obj):
         self.record = obj
 
-    #TODO:: rm it?
-    def accept_and_assign_record(self):
-        record = self.accept()
-        self.record = record
-        self.save()
-
 rules.add_perm('powerdns.add_recordrequest', rules.is_authenticated)

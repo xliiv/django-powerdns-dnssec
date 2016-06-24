@@ -196,7 +196,7 @@ class RecordViewSet(OwnerViewSet):
             serializer.instance.domain.can_auto_accept(request.user) and
             instance.can_auto_accept(request.user)
         ):
-            record_request.accept()
+            serializer.instance = record_request.accept()
             code = status.HTTP_200_OK
             headers = {}
         else:
