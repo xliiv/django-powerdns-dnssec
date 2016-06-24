@@ -1,5 +1,6 @@
 """Model for change requests"""
 
+import json
 import logging
 
 from django.db import models
@@ -46,9 +47,11 @@ class Request(Owned):
         null=True,
         blank=True
     )
+    last_change_json = models.TextField(null=True, blank=True)
 
     def reject(self):
         """Reject the request"""
+        #TODO:: handle json snapshot
         self.state = RequestStates.REJECTED
         self.save()
 
@@ -73,6 +76,7 @@ class DeleteRequest(Request):
     def accept(self):
         object_ = self.target
         object_.delete()
+        #TODO:: handle json snapshot
         self.state = RequestStates.ACCEPTED
         self.save()
 
@@ -94,6 +98,8 @@ class ChangeCreateRequest(Request):
 
     def accept(self):
         object_ = self.get_object()
+        #TODO:: what about domain? :P
+        self.last_change_json(json.dumps(self.diff_with_obj(object_)))
         for field_name in type(self).copy_fields:
             if field_name in self.ignore_fields:
                 continue
@@ -349,5 +355,31 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
 
     def assign_object(self, obj):
         self.record = obj
+
+    def _to_record_request_name(self, field_name):
+        if field_name in self.copy_fields:
+            field_name = field_name.replace('target_', '')
+        return field_name
+
+    def diff_with_record(self, record):
+        """
+        return: {
+            'name': {'old': 'old-value', 'new': 'new-value'},
+            'ttl': {'old': 'old-value', 'new': ''},
+            'prio': {'old': '', 'new': 'new-value'},
+            ..
+        }
+        """
+        diff_result = {}
+        for field in RecordRequest._meta.fields:
+            old_value = getattr(record, field.name, '')
+            new_value = getattr(
+                self, self._to_record_request_name(field.name), ''
+            )
+            if old_value != new_value:
+                diff_result[field.name] = {
+                    {'old': old_value, 'new': new_value}
+                }
+
 
 rules.add_perm('powerdns.add_recordrequest', rules.is_authenticated)
