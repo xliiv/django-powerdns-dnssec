@@ -230,7 +230,6 @@ class RecordViewSet(OwnerViewSet):
         delete_request = DeleteRequest(
             owner=request.user, target=instance,
         )
-        delete_request.save()
         if (
             instance.domain.can_auto_accept(request.user) and
             instance.can_auto_accept(request.user)
@@ -238,6 +237,7 @@ class RecordViewSet(OwnerViewSet):
             delete_request.accept()
             code = status.HTTP_204_NO_CONTENT
         else:
+            delete_request.save()
             code = status.HTTP_202_ACCEPTED
         return Response(status=code)
 
