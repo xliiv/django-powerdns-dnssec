@@ -52,6 +52,11 @@ class Request(Owned):
     def reject(self):
         """Reject the request"""
         #TODO:: handle json snapshot
+
+        #object_ = self.get_object()
+        #self.last_change_json(json.dumps(self.diff_with_object(object_)))
+
+
         self.state = RequestStates.REJECTED
         self.save()
 
@@ -75,6 +80,7 @@ class DeleteRequest(Request):
 
     def accept(self):
         object_ = self.target
+        self.get_object()
         object_.delete()
         #TODO:: handle json snapshot
         self.state = RequestStates.ACCEPTED
@@ -98,8 +104,7 @@ class ChangeCreateRequest(Request):
 
     def accept(self):
         object_ = self.get_object()
-        #TODO:: what about domain? :P
-        self.last_change_json(json.dumps(self.diff_with_obj(object_)))
+        self.last_change_json = json.dumps(self.diff_with_object(object_))
         for field_name in type(self).copy_fields:
             if field_name in self.ignore_fields:
                 continue
@@ -245,6 +250,10 @@ class DomainRequest(ChangeCreateRequest):
     def assign_object(self, obj):
         self.domain = obj
 
+    def diff_with_object(self, record):
+        """We don't care about domain history"""
+        return {}
+
 
 # rules.add_perm('powerdns', rules.is_authenticated)
 rules.add_perm('powerdns.add_domainrequest', rules.is_authenticated)
@@ -356,12 +365,7 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
     def assign_object(self, obj):
         self.record = obj
 
-    def _to_record_request_name(self, field_name):
-        if field_name in self.copy_fields:
-            field_name = field_name.replace('target_', '')
-        return field_name
-
-    def diff_with_record(self, record):
+    def diff_with_object(self, record):
         """
         return: {
             'name': {'old': 'old-value', 'new': 'new-value'},
@@ -370,16 +374,24 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
             ..
         }
         """
-        diff_result = {}
-        for field in RecordRequest._meta.fields:
-            old_value = getattr(record, field.name, '')
-            new_value = getattr(
-                self, self._to_record_request_name(field.name), ''
-            )
-            if old_value != new_value:
-                diff_result[field.name] = {
-                    {'old': old_value, 'new': new_value}
-                }
+        def _fmt(old, new):
+            return {
+                'old': old,
+                'new': new,
+            }
+
+        return {
+            'content': _fmt(record.content, self.target_content),
+            'name': _fmt(record.name, self.target_name),
+            'owner': _fmt(
+                getattr(record.owner, 'username', ''),
+                getattr(self.target_owner, 'username', ''),
+            ),
+            'prio': _fmt(record.prio, self.target_prio),
+            'remarks': _fmt(record.remarks, self.target_remarks),
+            'ttl': _fmt(record.ttl, self.target_ttl),
+            'type': _fmt(record.type, self.target_type),
+        }
 
 
 rules.add_perm('powerdns.add_recordrequest', rules.is_authenticated)
