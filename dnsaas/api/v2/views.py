@@ -23,7 +23,6 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import DjangoObjectPermissions
 from rest_framework.response import Response
 
-from powerdns.models.requests import RequestStates
 from .serializers import (
     CryptoKeySerializer,
     DomainMetadataSerializer,
