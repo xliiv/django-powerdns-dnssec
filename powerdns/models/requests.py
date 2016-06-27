@@ -79,10 +79,16 @@ class DeleteRequest(Request):
     view = 'accept_delete'
 
     def accept(self):
+        if self.content_type.name == 'record':
+            object_request = RecordRequest()
+        elif self.content_type.name == 'domain':
+            object_request = DomainRequest()
+        diff = object_request.diff_with_object(self)
+        self.last_change_json(json.dumps(diff))
+
+        object_ = self.get_object()
         object_ = self.target
-        self.get_object()
         object_.delete()
-        #TODO:: handle json snapshot
         self.state = RequestStates.ACCEPTED
         self.save()
 
@@ -384,8 +390,8 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
             'content': _fmt(record.content, self.target_content),
             'name': _fmt(record.name, self.target_name),
             'owner': _fmt(
-                getattr(record.owner, 'username', ''),
-                getattr(self.target_owner, 'username', ''),
+                getattr(record.owner, 'username', None),
+                getattr(self.target_owner, 'username', None),
             ),
             'prio': _fmt(record.prio, self.target_prio),
             'remarks': _fmt(record.remarks, self.target_remarks),
