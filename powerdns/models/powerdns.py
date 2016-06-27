@@ -631,7 +631,6 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             'type':  '',
         }
 
-    #TODO:: better names?
     def as_history_dump(self):
         return {
             'content': self.content,

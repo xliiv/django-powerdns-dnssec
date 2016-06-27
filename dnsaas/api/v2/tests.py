@@ -216,7 +216,7 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record_request.owner, self.super_user)
         self.assertEqual(record_request.target_owner, self.super_user)
 
-    def test_record_creation_dumps_history_data_correct(self):
+    def test_record_creation_dumps_history_data_correctly(self):
         self.client.login(username='super_user', password='super_user')
         domain = DomainFactory(name='example.com', owner=self.super_user)
         data = {
@@ -242,7 +242,6 @@ class TestRecords(BaseApiTestCase):
             'ttl': {'new': 3600, 'old': ''},
             'type': {'new': 'CNAME', 'old': ''}
         })
-
 
     #
     # updates
@@ -435,7 +434,7 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record.owner, self.regular_user2)
         self.assertEqual(record.remarks, 'updated remarks')
 
-    def test_record_update_dumps_history_data_correct(self):
+    def test_record_update_dumps_history_data_correctly(self):
         self.client.login(username='super_user', password='super_user')
         record = RecordFactory(
             auto_ptr=AutoPtrOptions.NEVER.id,
@@ -558,6 +557,38 @@ class TestRecords(BaseApiTestCase):
             ).count(),
             0,
         )
+
+    def test_record_deletion_dumps_history_data_correctly(self):
+        self.client.login(username='super_user', password='super_user')
+        record_request = RecordRequestFactory(
+            state=RequestStates.OPEN.id,
+            record__auto_ptr=AutoPtrOptions.NEVER.id,
+            record__type='A',
+            record__name='blog.com',
+            record__content='192.168.1.0',
+        )
+        response = self.client.delete(
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record_request.record.pk},
+            ),
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        record_request = DeleteRequest.objects.get(
+            target_id=record_request.id
+        )
+        history = json.loads(record_request.last_change_json)
+        self.assertEqual(history, {
+            'content': {'new': '', 'old': '192.168.1.0'},
+            'name': {'new': '', 'old': 'blog.com'},
+            'owner': {'new': '', 'old': 'user_1'},
+            'prio': {'new': '', 'old': None},
+            'remarks': {'new': '', 'old': ''},
+            'ttl': {'new': '', 'old': 3600},
+            'type': {'new': '', 'old': 'A'}
+        })
 
 
 class TestRecordValidation(BaseApiTestCase):

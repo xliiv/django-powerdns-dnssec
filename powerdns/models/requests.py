@@ -51,9 +51,6 @@ class Request(Owned):
 
     def reject(self):
         """Reject the request"""
-        #TODO:: handle json snapshot
-        #object_ = self.get_object()
-        #self.last_change_json(json.dumps(self.diff_with_object(object_)))
         self.state = RequestStates.REJECTED
         self.save()
 
@@ -374,7 +371,6 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
 
     def assign_object(self, obj):
         self.record = obj
-
 
     def as_history_dump(self):
         return {
