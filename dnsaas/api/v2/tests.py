@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+import json
 from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
@@ -228,13 +229,19 @@ class TestRecords(BaseApiTestCase):
             reverse('api:v2:record-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
-        import json
-        record_request = RecordRequest.objects.get(record_id=response.data['id'])
+        record_request = RecordRequest.objects.get(
+            record_id=response.data['id']
+        )
         history = json.loads(record_request.last_change_json)
-        import ipdb
-        ipdb.set_trace()
-
-        #self.assertEqual(record_request.target_owner, self.super_user)
+        self.assertEqual(history, {
+            'content': {'new': '192.168.0.1', 'old': ''},
+            'name': {'new': 'example.com', 'old': ''},
+            'owner': {'new': 'super_user', 'old': ''},
+            'prio': {'new': None, 'old': ''},
+            'remarks': {'new': '', 'old': ''},
+            'ttl': {'new': 3600, 'old': ''},
+            'type': {'new': 'CNAME', 'old': ''}
+        })
 
 
     #
