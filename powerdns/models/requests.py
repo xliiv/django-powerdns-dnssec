@@ -6,6 +6,7 @@ import logging
 from django.db import models
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django_extensions.db.fields.json import JSONField
 from dj.choices import Choices
 from dj.choices.fields import ChoiceField
 from django.contrib.contenttypes.fields import ContentType, GenericForeignKey
@@ -47,7 +48,7 @@ class Request(Owned):
         null=True,
         blank=True
     )
-    last_change_json = models.TextField(null=True, blank=True)
+    last_change_json = JSONField(null=True, blank=True)
 
     def reject(self):
         """Reject the request"""
@@ -75,8 +76,7 @@ class DeleteRequest(Request):
     def accept(self):
         old_dict = self.target.as_history_dump()
         new_dict = self.target.as_empty_history()
-        diff_dict = flat_dict_diff(old_dict, new_dict)
-        self.last_change_json = json.dumps(diff_dict)
+        self.last_change_json = flat_dict_diff(old_dict, new_dict)
 
         self.target.delete()
         self.state = RequestStates.ACCEPTED
@@ -109,8 +109,7 @@ class ChangeCreateRequest(Request):
             # creation
             old_dict = object_.as_empty_history()
             new_dict = self.as_history_dump()
-        diff_dict = flat_dict_diff(old_dict, new_dict)
-        self.last_change_json = json.dumps(diff_dict)
+        self.last_change_json = flat_dict_diff(old_dict, new_dict)
 
         for field_name in type(self).copy_fields:
             if field_name in self.ignore_fields:

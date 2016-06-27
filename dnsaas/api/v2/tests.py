@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-import json
 from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
@@ -232,8 +231,7 @@ class TestRecords(BaseApiTestCase):
         record_request = RecordRequest.objects.get(
             record_id=response.data['id']
         )
-        history = json.loads(record_request.last_change_json)
-        self.assertEqual(history, {
+        self.assertEqual(record_request.last_change_json, {
             'content': {'new': '192.168.0.1', 'old': ''},
             'name': {'new': 'example.com', 'old': ''},
             'owner': {'new': 'super_user', 'old': ''},
@@ -456,12 +454,11 @@ class TestRecords(BaseApiTestCase):
         record_request = RecordRequest.objects.get(
             record_id=response.data['id']
         )
-        history = json.loads(record_request.last_change_json)
-        self.assertEqual(history['name'], {
+        self.assertEqual(record_request.last_change_json['name'], {
             'old': record.name,
             'new': new_name,
         })
-        self.assertEqual(history['remarks'], {
+        self.assertEqual(record_request.last_change_json['remarks'], {
             'old': record.remarks,
             'new': record.remarks,
         })
@@ -576,11 +573,10 @@ class TestRecords(BaseApiTestCase):
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        record_request = DeleteRequest.objects.get(
-            target_id=record_request.id
+        delete_request = DeleteRequest.objects.get(
+            target_id=record_request.record_id
         )
-        history = json.loads(record_request.last_change_json)
-        self.assertEqual(history, {
+        self.assertEqual(delete_request.last_change_json, {
             'content': {'new': '', 'old': '192.168.1.0'},
             'name': {'new': '', 'old': 'blog.com'},
             'owner': {'new': '', 'old': 'user_1'},
