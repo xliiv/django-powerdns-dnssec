@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
+import django_extensions.db.fields.json
 
 
 class Migration(migrations.Migration):
@@ -14,16 +15,16 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='deleterequest',
             name='last_change_json',
-            field=models.TextField(null=True, blank=True),
+            field=django_extensions.db.fields.json.JSONField(null=True, blank=True),
         ),
         migrations.AddField(
             model_name='domainrequest',
             name='last_change_json',
-            field=models.TextField(null=True, blank=True),
+            field=django_extensions.db.fields.json.JSONField(null=True, blank=True),
         ),
         migrations.AddField(
             model_name='recordrequest',
             name='last_change_json',
-            field=models.TextField(null=True, blank=True),
+            field=django_extensions.db.fields.json.JSONField(null=True, blank=True),
         ),
     ]
