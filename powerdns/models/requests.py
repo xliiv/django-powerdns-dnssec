@@ -19,7 +19,7 @@ from powerdns.models import (
     Domain,
     Record
 )
-from powerdns.utils import AutoPtrOptions, RecordLike
+from powerdns.utils import AutoPtrOptions, RecordLike, flat_dict_diff
 
 
 log = logging.getLogger(__name__)
@@ -52,11 +52,8 @@ class Request(Owned):
     def reject(self):
         """Reject the request"""
         #TODO:: handle json snapshot
-
         #object_ = self.get_object()
         #self.last_change_json(json.dumps(self.diff_with_object(object_)))
-
-
         self.state = RequestStates.REJECTED
         self.save()
 
@@ -79,16 +76,12 @@ class DeleteRequest(Request):
     view = 'accept_delete'
 
     def accept(self):
-        if self.content_type.name == 'record':
-            object_request = RecordRequest()
-        elif self.content_type.name == 'domain':
-            object_request = DomainRequest()
-        diff = object_request.diff_with_object(self)
-        self.last_change_json(json.dumps(diff))
+        old_dict = self.target.as_history_dump()
+        new_dict = self.target.as_empty_history()
+        diff_dict = flat_dict_diff(old_dict, new_dict)
+        self.last_change_json = json.dumps(diff_dict)
 
-        object_ = self.get_object()
-        object_ = self.target
-        object_.delete()
+        self.target.delete()
         self.state = RequestStates.ACCEPTED
         self.save()
 
@@ -110,7 +103,12 @@ class ChangeCreateRequest(Request):
 
     def accept(self):
         object_ = self.get_object()
-        self.last_change_json = json.dumps(self.diff_with_object(object_))
+
+        old_dict = object_.as_history_dump()
+        new_dict = self.as_history_dump()
+        diff_dict = flat_dict_diff(old_dict, new_dict)
+        self.last_change_json = json.dumps(diff_dict)
+
         for field_name in type(self).copy_fields:
             if field_name in self.ignore_fields:
                 continue
@@ -256,8 +254,8 @@ class DomainRequest(ChangeCreateRequest):
     def assign_object(self, obj):
         self.domain = obj
 
-    def diff_with_object(self, record):
-        """We don't care about domain history"""
+    def as_history_dump(self):
+        """We don't care about domain history for now"""
         return {}
 
 
@@ -371,32 +369,16 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
     def assign_object(self, obj):
         self.record = obj
 
-    def diff_with_object(self, record):
-        """
-        return: {
-            'name': {'old': 'old-value', 'new': 'new-value'},
-            'ttl': {'old': 'old-value', 'new': ''},
-            'prio': {'old': '', 'new': 'new-value'},
-            ..
-        }
-        """
-        def _fmt(old, new):
-            return {
-                'old': old,
-                'new': new,
-            }
 
+    def as_history_dump(self):
         return {
-            'content': _fmt(record.content, self.target_content),
-            'name': _fmt(record.name, self.target_name),
-            'owner': _fmt(
-                getattr(record.owner, 'username', None),
-                getattr(self.target_owner, 'username', None),
-            ),
-            'prio': _fmt(record.prio, self.target_prio),
-            'remarks': _fmt(record.remarks, self.target_remarks),
-            'ttl': _fmt(record.ttl, self.target_ttl),
-            'type': _fmt(record.type, self.target_type),
+            'content': self.target_content,
+            'name': self.target_name,
+            'owner': getattr(self.target_owner, 'username', None),
+            'prio': self.target_prio,
+            'remarks': self.target_remarks,
+            'ttl':  self.target_ttl,
+            'type':  self.target_type,
         }
 
 
