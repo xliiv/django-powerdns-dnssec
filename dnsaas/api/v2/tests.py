@@ -215,6 +215,28 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record_request.owner, self.super_user)
         self.assertEqual(record_request.target_owner, self.super_user)
 
+    def test_record_creation_dumps_history_data_correct(self):
+        self.client.login(username='super_user', password='super_user')
+        domain = DomainFactory(name='example.com', owner=self.super_user)
+        data = {
+            'type': 'CNAME',
+            'domain': domain.id,
+            'name': 'example.com',
+            'content': '192.168.0.1',
+        }
+        response = self.client.post(
+            reverse('api:v2:record-list'), data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        import json
+        record_request = RecordRequest.objects.get(record_id=response.data['id'])
+        history = json.loads(record_request.last_change_json)
+        import ipdb
+        ipdb.set_trace()
+
+        #self.assertEqual(record_request.target_owner, self.super_user)
+
+
     #
     # updates
     #

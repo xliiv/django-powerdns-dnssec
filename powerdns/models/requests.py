@@ -104,8 +104,14 @@ class ChangeCreateRequest(Request):
     def accept(self):
         object_ = self.get_object()
 
-        old_dict = object_.as_history_dump()
-        new_dict = self.as_history_dump()
+        if object_.id:
+            # udpate
+            old_dict = object_.as_history_dump()
+            new_dict = self.as_history_dump()
+        else:
+            # creation
+            old_dict = object_.as_empty_history()
+            new_dict = self.as_history_dump()
         diff_dict = flat_dict_diff(old_dict, new_dict)
         self.last_change_json = json.dumps(diff_dict)
 
