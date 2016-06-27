@@ -579,7 +579,7 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(delete_request.last_change_json, {
             'content': {'new': '', 'old': '192.168.1.0'},
             'name': {'new': '', 'old': 'blog.com'},
-            'owner': {'new': '', 'old': 'user_1'},
+            'owner': {'new': '', 'old': record_request.record.owner.username},
             'prio': {'new': '', 'old': None},
             'remarks': {'new': '', 'old': ''},
             'ttl': {'new': '', 'old': 3600},
