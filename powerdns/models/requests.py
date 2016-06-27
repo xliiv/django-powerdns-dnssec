@@ -1,6 +1,5 @@
 """Model for change requests"""
 
-import json
 import logging
 
 from django.db import models
