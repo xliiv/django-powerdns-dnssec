@@ -435,6 +435,38 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record.owner, self.regular_user2)
         self.assertEqual(record.remarks, 'updated remarks')
 
+    def test_record_update_dumps_history_data_correct(self):
+        self.client.login(username='super_user', password='super_user')
+        record = RecordFactory(
+            auto_ptr=AutoPtrOptions.NEVER.id,
+            type='A',
+            name='blog.com',
+            content='192.168.1.0',
+            owner=self.regular_user1,
+        )
+        new_name = 'new-' + record.name
+        response = self.client.patch(
+            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            data={
+                'name': new_name
+            },
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        record_request = RecordRequest.objects.get(
+            record_id=response.data['id']
+        )
+        history = json.loads(record_request.last_change_json)
+        self.assertEqual(history['name'], {
+            'old': record.name,
+            'new': new_name,
+        })
+        self.assertEqual(history['remarks'], {
+            'old': record.remarks,
+            'new': record.remarks,
+        })
+
     #
     # deletion
     #
