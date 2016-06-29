@@ -75,6 +75,7 @@ class RecordTestCase(TestCase):
             name='example.com',
             template=None,
             reverse_template=DomainTemplateFactory(name='reverse'),
+            auto_ptr=AutoPtrOptions.NEVER,
         )
 
     def validate(self, **values):
