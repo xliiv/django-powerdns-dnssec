@@ -3,7 +3,6 @@
 
 from powerdns.models import Record
 from powerdns.tests.utils import RecordTestCase, RecordFactory
-from powerdns.utils import AutoPtrOptions
 
 
 class TestSOASerialUpdate(RecordTestCase):

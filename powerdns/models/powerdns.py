@@ -387,11 +387,6 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             'that depend on A records.'
         )
     )
-    #auto_ptr = ChoiceField(
-    #    _('Auto PTR record'),
-    #    choices=AutoPtrOptions,
-    #    default=AutoPtrOptions.ALWAYS,
-    #)
 
     class Meta:
         db_table = u'records'
@@ -637,7 +632,10 @@ def update_ptr(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Record, dispatch_uid='record_create_ptr')
 def create_ptr(sender, instance, **kwargs):
-    if instance.domain.auto_ptr == AutoPtrOptions.NEVER or instance.type != 'A':
+    if (
+        instance.domain.auto_ptr == AutoPtrOptions.NEVER or
+        instance.type != 'A'
+    ):
         instance.delete_ptr()
         return
     instance.create_ptr()
