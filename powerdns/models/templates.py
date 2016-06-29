@@ -19,7 +19,7 @@ class DomainTemplateManager(models.Manager):
 class DomainTemplate(models.Model):
     """A predefined template containing several record templates"""
 
-    copy_fields = ['record_auto_ptr', 'type']
+    copy_fields = ['auto_ptr', 'type']
 
     name = models.CharField(
         _('Template identifier'),
@@ -42,7 +42,7 @@ class DomainTemplate(models.Model):
     )
     is_public_domain = models.BooleanField(default=True)
 
-    record_auto_ptr = ChoiceField(
+    auto_ptr = ChoiceField(
         choices=AutoPtrOptions,
         default=AutoPtrOptions.ALWAYS,
     )

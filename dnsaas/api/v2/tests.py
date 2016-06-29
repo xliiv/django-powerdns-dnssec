@@ -41,7 +41,7 @@ class TestApi(TestCase):
 
         domain = DomainFactory(
             name='example.com', type=None, unrestricted=False,
-            record_auto_ptr=2,
+            auto_ptr=2,
             reverse_template=DomainTemplateFactory(name='reverse'),
         )
         for i in range(3):

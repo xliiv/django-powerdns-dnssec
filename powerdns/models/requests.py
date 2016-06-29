@@ -137,7 +137,7 @@ class DomainRequest(ChangeCreateRequest):
         'target_remarks',
         'target_template',
         'target_reverse_template',
-        'target_record_auto_ptr',
+        'target_auto_ptr',
         'target_owner',
     ]
 
@@ -200,7 +200,7 @@ class DomainRequest(ChangeCreateRequest):
             'template.'
         )
     )
-    target_record_auto_ptr = ChoiceField(
+    target_auto_ptr = ChoiceField(
         choices=AutoPtrOptions,
         default=AutoPtrOptions.ALWAYS,
         help_text=_(
