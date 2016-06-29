@@ -627,6 +627,14 @@ def update_serial(sender, instance, **kwargs):
         soa.save()
 
 
+@receiver(post_save, sender=Domain, dispatch_uid='domain_update_ptr')
+def update_ptr(sender, instance, **kwargs):
+    records = Record.objects.filter(domain=instance)
+    for record in records:
+        # recall signals on Record
+        record.save(force_update=True)
+
+
 @receiver(post_save, sender=Record, dispatch_uid='record_create_ptr')
 def create_ptr(sender, instance, **kwargs):
     if instance.domain.auto_ptr == AutoPtrOptions.NEVER or instance.type != 'A':
