@@ -175,7 +175,7 @@ class RecordAdmin(OwnedAdmin, CopyingAdmin):
                 'domain',
                 ('type', 'name', 'content',),
                 'auth',
-                'auto_ptr',
+                #'auto_ptr',
             ),
         }),
         ('Advanced options', {

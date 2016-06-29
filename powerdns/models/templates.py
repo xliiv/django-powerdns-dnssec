@@ -110,11 +110,11 @@ class RecordTemplate(models.Model):
         default=True,
     )
     remarks = models.TextField(_('Additional remarks'), blank=True)
-    auto_ptr = ChoiceField(
-        _('Auto PTR field'),
-        choices=AutoPtrOptions,
-        default=AutoPtrOptions.ALWAYS,
-    )
+    #auto_ptr = ChoiceField(
+    #    _('Auto PTR field'),
+    #    choices=AutoPtrOptions,
+    #    default=AutoPtrOptions.ALWAYS,
+    #)
 
     def natural_key(self):
         return (self.domain_template.name, self.type, self.name, self.content)
@@ -131,7 +131,8 @@ class RecordTemplate(models.Model):
         template_kwargs = {
             'domain-name': domain.name,
         }
-        for argname in ['type', 'ttl', 'prio', 'auth', 'auto_ptr']:
+        #for argname in ['type', 'ttl', 'prio', 'auth', 'auto_ptr']:
+        for argname in ['type', 'ttl', 'prio', 'auth']:
             kwargs[argname] = getattr(self, argname)
         for argname in ['name', 'content']:
             kwargs[argname] = getattr(self, argname).format(**template_kwargs)
