@@ -29,14 +29,12 @@ class TestSOASerialUpdate(RecordTestCase):
             type='A',
             name='www.example.com',
             content='192.168.1.1',
-            auto_ptr=AutoPtrOptions.NEVER,
         )
         self.cname_record = RecordFactory(
             domain=self.domain,
             type='CNAME',
             name='blog.example.com',
             content='www.example.com',
-            auto_ptr=AutoPtrOptions.NEVER,
         )
 
     def test_soa_update(self):
