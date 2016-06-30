@@ -102,7 +102,7 @@ class ChangeCreateRequest(Request):
     class Meta:
         abstract = True
 
-    def _set_json_history(self, object_):
+    def _get_json_history(self, object_):
         if object_.id:
             # udpate
             old_dict = object_.as_history_dump()
@@ -110,7 +110,10 @@ class ChangeCreateRequest(Request):
             # creation
             old_dict = object_.as_empty_history()
         new_dict = self.as_history_dump()
-        self.last_change_json = flat_dict_diff(old_dict, new_dict)
+        return flat_dict_diff(old_dict, new_dict)
+
+    def _set_json_history(self, object_):
+        self.last_change_json = self._get_json_history(object_)
 
     def accept(self):
         object_ = self.get_object()

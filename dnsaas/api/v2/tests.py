@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+import unittest
 from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
@@ -23,6 +24,7 @@ from powerdns.tests.utils import (
 )
 from powerdns.utils import AutoPtrOptions
 from dnsaas.api.v2.views import RecordViewSet
+from dnsaas.api.v2.serializers import RecordRequestSerializer
 
 
 class TestApi(TestCase):
@@ -521,7 +523,7 @@ class TestRecords(BaseApiTestCase):
             'owner': {'new': None, 'old': data['owner'].username},
             'prio': {'new': None, 'old': None},
             'remarks': {'new': 'update', 'old': data['remarks']},
-            #TODO:: what about this and other defaults? Oo
+            # TODO: what about this and other defaults? Oo
             'ttl': {'new': 3600, 'old': 3600},
             'type': {'new': '', 'old': data['type']}
         })
@@ -649,6 +651,10 @@ class TestRecords(BaseApiTestCase):
             'type': {'new': '', 'old': 'A'}
         })
 
+    @unittest.skip("todo when DeleteRequest and ChangeRequest are unified")
+    def test_rejected_record_deletion_dumps_data_correctly(self):
+        pass
+
 
 class TestRecordValidation(BaseApiTestCase):
     def test_validation_error_when_A_record_name_is_bad(self):
@@ -709,3 +715,64 @@ class TestObtainAuthToken(TestCase):
             format='json',
         )
         self.assertEqual(response.status_code, 400)
+
+
+class TestRecordRequestSerializer(TestCase):
+
+    def setUp(self):  # noqa
+        self.client = APIClient()  # do not login
+        self.user = UserFactory()
+
+    def test_last_change_comes_from_dump_when_status_not_open(self):
+        rr = RecordRequestFactory(
+            state=RequestStates.OPEN, target_remarks='initial',
+        )
+        rr.accept()
+        serializer = RecordRequestSerializer(rr)
+
+        self.assertEqual(serializer.instance.record.remarks, 'initial')
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['new'],
+            'initial',
+        )
+
+        rr.record.remarks = 'updated'
+        rr.record.save()
+        rr.refresh_from_db()
+
+        serializer = RecordRequestSerializer(rr)
+        self.assertEqual(serializer.instance.record.remarks, 'updated')
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['new'],
+            'initial',
+        )
+
+    def test_last_change_is_calculated_when_status_open(self):
+        rr = RecordRequestFactory(
+            state=RequestStates.OPEN, target_remarks='update 1',
+            record__remarks='initial'
+        )
+        serializer = RecordRequestSerializer(rr)
+
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['old'],
+            rr.get_object().remarks,
+        )
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['new'],
+            serializer.instance.target_remarks
+        )
+
+        rr.record.remarks = 'update 2'
+        rr.record.save()
+        rr.refresh_from_db()
+
+        serializer = RecordRequestSerializer(rr)
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['old'],
+            rr.get_object().remarks,
+        )
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['new'],
+            serializer.instance.target_remarks
+        )
