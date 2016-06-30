@@ -237,13 +237,13 @@ class TestRecords(BaseApiTestCase):
             'content': {'new': '192.168.0.1', 'old': ''},
             'name': {'new': 'example.com', 'old': ''},
             'owner': {'new': 'super_user', 'old': ''},
-            'prio': {'new': None, 'old': ''},
+            'prio': {'new': '', 'old': ''},
             'remarks': {'new': '', 'old': ''},
             'ttl': {'new': 3600, 'old': ''},
             'type': {'new': 'CNAME', 'old': ''}
         })
 
-    def test_rejected_record_creation_dumps_data_correctly(self):
+    def test_rejected_record_creation_dumps_history_correctly(self):
         self.client.login(username='regular_user1', password='regular_user1')
         domain = DomainFactory(name='example.com', owner=self.super_user)
         data = {
@@ -266,7 +266,7 @@ class TestRecords(BaseApiTestCase):
             'content': {'new': 'example.com', 'old': ''},
             'name': {'new': 'www.example.com', 'old': ''},
             'owner': {'new': 'regular_user1', 'old': ''},
-            'prio': {'new': None, 'old': ''},
+            'prio': {'new': '', 'old': ''},
             'remarks': {'new': '', 'old': ''},
             'ttl': {'new': 3600, 'old': ''},
             'type': {'new': 'CNAME', 'old': ''}
@@ -494,7 +494,7 @@ class TestRecords(BaseApiTestCase):
             'new': record.remarks,
         })
 
-    def test_rejected_record_update_dumps_data_correctly(self):
+    def test_rejected_record_update_dumps_history_correctly(self):
         self.client.login(username='regular_user1', password='regular_user1')
         data = {
             'domain': DomainFactory(name='example.com', owner=self.super_user),
@@ -518,12 +518,17 @@ class TestRecords(BaseApiTestCase):
         self.assertFalse(record_request.last_change_json)
         record_request.reject()
         self.assertEqual(record_request.last_change_json, {
-            'content': {'new': None, 'old': data['content']},
+            'content': {'new': '', 'old': data['content']},
             'name': {'new': '', 'old': data['name']},
-            'owner': {'new': None, 'old': data['owner'].username},
-            'prio': {'new': None, 'old': None},
+            'owner': {'new': '', 'old': data['owner'].username},
+            'prio': {'new': '', 'old': ''},
             'remarks': {'new': 'update', 'old': data['remarks']},
-            # TODO: what about this and other defaults? Oo
+            # old=3600 its because it's model default
+            # when update request is send, new RecordRequest is created
+            # if user doesn't specify ttl (or other value which has default)
+            # it is set on model and diff uses models value which are already
+            # set, so it can't be distinguish if eg. 3600 was from default of
+            # from user
             'ttl': {'new': 3600, 'old': 3600},
             'type': {'new': '', 'old': data['type']}
         })
@@ -645,14 +650,14 @@ class TestRecords(BaseApiTestCase):
             'content': {'new': '', 'old': '192.168.1.0'},
             'name': {'new': '', 'old': 'blog.com'},
             'owner': {'new': '', 'old': record_request.record.owner.username},
-            'prio': {'new': '', 'old': None},
+            'prio': {'new': '', 'old': ''},
             'remarks': {'new': '', 'old': ''},
             'ttl': {'new': '', 'old': 3600},
             'type': {'new': '', 'old': 'A'}
         })
 
     @unittest.skip("todo when DeleteRequest and ChangeRequest are unified")
-    def test_rejected_record_deletion_dumps_data_correctly(self):
+    def test_rejected_record_deletion_dumps_history_correctly(self):
         pass
 
 

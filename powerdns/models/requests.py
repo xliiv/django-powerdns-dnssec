@@ -387,13 +387,13 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
 
     def as_history_dump(self):
         return {
-            'content': self.target_content,
-            'name': self.target_name,
-            'owner': getattr(self.target_owner, 'username', None),
-            'prio': self.target_prio,
-            'remarks': self.target_remarks,
-            'ttl':  self.target_ttl,
-            'type':  self.target_type,
+            'content': self.target_content or '',
+            'name': self.target_name or '',
+            'owner': getattr(self.target_owner, 'username', ''),
+            'prio': self.target_prio or '',
+            'remarks': self.target_remarks or '',
+            'ttl':  self.target_ttl or '',
+            'type':  self.target_type or '',
         }
 
 

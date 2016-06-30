@@ -633,13 +633,13 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
 
     def as_history_dump(self):
         return {
-            'content': self.content,
-            'name': self.name,
-            'owner': getattr(self.owner, 'username', None),
-            'prio': self.prio,
-            'remarks': self.remarks,
-            'ttl':  self.ttl,
-            'type':  self.type,
+            'content': self.content or '',
+            'name': self.name or '',
+            'owner': getattr(self.owner, 'username', ''),
+            'prio': self.prio or '',
+            'remarks': self.remarks or '',
+            'ttl':  self.ttl or '',
+            'type':  self.type or '',
         }
 
 rules.add_perm('powerdns.add_record', rules.is_authenticated)
