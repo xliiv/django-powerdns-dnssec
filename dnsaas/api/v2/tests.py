@@ -241,6 +241,35 @@ class TestRecords(BaseApiTestCase):
             'type': {'new': 'CNAME', 'old': ''}
         })
 
+    def test_rejected_record_creation_dumps_data_correctly(self):
+        self.client.login(username='regular_user1', password='regular_user1')
+        domain = DomainFactory(name='example.com', owner=self.super_user)
+        data = {
+            'type': 'CNAME',
+            'domain': domain.id,
+            'name': 'www.example.com',
+            'content': 'example.com',
+        }
+        response = self.client.post(
+            reverse('api:v2:record-list'), data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        record_request = RecordRequest.objects.get(
+            id=response.data['record_request_id']
+        )
+
+        self.assertFalse(record_request.last_change_json)
+        record_request.reject()
+        self.assertEqual(record_request.last_change_json, {
+            'content': {'new': 'example.com', 'old': ''},
+            'name': {'new': 'www.example.com', 'old': ''},
+            'owner': {'new': 'regular_user1', 'old': ''},
+            'prio': {'new': None, 'old': ''},
+            'remarks': {'new': '', 'old': ''},
+            'ttl': {'new': 3600, 'old': ''},
+            'type': {'new': 'CNAME', 'old': ''}
+        })
+
     #
     # updates
     #
@@ -461,6 +490,40 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record_request.last_change_json['remarks'], {
             'old': record.remarks,
             'new': record.remarks,
+        })
+
+    def test_rejected_record_update_dumps_data_correctly(self):
+        self.client.login(username='regular_user1', password='regular_user1')
+        data = {
+            'domain': DomainFactory(name='example.com', owner=self.super_user),
+            'type': 'CNAME',
+            'name': 'www.example.com',
+            'content': 'example.com',
+            'remarks': 'initial',
+            'owner': self.regular_user1,
+        }
+        to_update = RecordFactory(**data)
+        response = self.client.patch(
+            reverse('api:v2:record-detail', kwargs={'pk': to_update.pk}),
+            data={'remarks': 'update'},
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        record_request = RecordRequest.objects.get(
+            id=response.data['record_request_id']
+        )
+
+        self.assertFalse(record_request.last_change_json)
+        record_request.reject()
+        self.assertEqual(record_request.last_change_json, {
+            'content': {'new': None, 'old': data['content']},
+            'name': {'new': '', 'old': data['name']},
+            'owner': {'new': None, 'old': data['owner'].username},
+            'prio': {'new': None, 'old': None},
+            'remarks': {'new': 'update', 'old': data['remarks']},
+            #TODO:: what about this and other defaults? Oo
+            'ttl': {'new': 3600, 'old': 3600},
+            'type': {'new': '', 'old': data['type']}
         })
 
     #

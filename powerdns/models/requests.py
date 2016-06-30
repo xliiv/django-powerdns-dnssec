@@ -81,6 +81,11 @@ class DeleteRequest(Request):
         self.state = RequestStates.ACCEPTED
         self.save()
 
+    def reject(self):
+        """Reject the request"""
+        self.state = RequestStates.REJECTED
+        self.save()
+
     def __str__(self):
         return 'Delete {}'.format(self.target)
 
@@ -97,19 +102,19 @@ class ChangeCreateRequest(Request):
     class Meta:
         abstract = True
 
-    def accept(self):
-        object_ = self.get_object()
-
+    def _set_json_history(self, object_):
         if object_.id:
             # udpate
             old_dict = object_.as_history_dump()
-            new_dict = self.as_history_dump()
         else:
             # creation
             old_dict = object_.as_empty_history()
-            new_dict = self.as_history_dump()
+        new_dict = self.as_history_dump()
         self.last_change_json = flat_dict_diff(old_dict, new_dict)
 
+    def accept(self):
+        object_ = self.get_object()
+        self._set_json_history(object_)
         for field_name in type(self).copy_fields:
             if field_name in self.ignore_fields:
                 continue
@@ -125,6 +130,13 @@ class ChangeCreateRequest(Request):
         self.state = RequestStates.ACCEPTED
         self.save()
         return object_
+
+    def reject(self):
+        """Reject the request"""
+        object_ = self.get_object()
+        self._set_json_history(object_)
+        self.state = RequestStates.REJECTED
+        self.save()
 
     def copy_records_data(self, fields_to_copy):
         """Sets data from `fields_to_copy` on self
