@@ -178,7 +178,7 @@ class Domain(TimeTrackable, Owned, WithRequests):
         ('NATIVE', 'NATIVE'),
         ('SLAVE', 'SLAVE'),
     )
-    copy_fields = ['record_auto_ptr']
+    copy_fields = ['auto_ptr']
     name = models.CharField(
         _("name"),
         unique=True,
@@ -217,7 +217,7 @@ class Domain(TimeTrackable, Owned, WithRequests):
             'template.'
         )
     )
-    record_auto_ptr = ChoiceField(
+    auto_ptr = ChoiceField(
         choices=AutoPtrOptions,
         default=AutoPtrOptions.ALWAYS,
         help_text=_(
@@ -394,11 +394,6 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             'should be automatically updated/deleted. Used for PTR records'
             'that depend on A records.'
         )
-    )
-    auto_ptr = ChoiceField(
-        _('Auto PTR record'),
-        choices=AutoPtrOptions,
-        default=AutoPtrOptions.ALWAYS,
     )
 
     class Meta:
@@ -580,7 +575,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         if self.type != 'A':
             raise ValueError(_('Creating PTR only for A records'))
         domain_name, number = to_reverse(self.content)
-        if self.auto_ptr == AutoPtrOptions.ALWAYS:
+        if self.domain.auto_ptr == AutoPtrOptions.ALWAYS:
             domain, created = Domain.objects.get_or_create(
                 name=domain_name,
                 defaults={
@@ -591,7 +586,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
                     'type': self.domain.type,
                 }
             )
-        elif self.auto_ptr == AutoPtrOptions.ONLY_IF_DOMAIN:
+        elif self.domain.auto_ptr == AutoPtrOptions.ONLY_IF_DOMAIN:
             try:
                 domain = Domain.objects.get(name=domain_name)
             except Domain.DoesNotExist:
@@ -656,9 +651,20 @@ def update_serial(sender, instance, **kwargs):
         soa.save()
 
 
+@receiver(post_save, sender=Domain, dispatch_uid='domain_update_ptr')
+def update_ptr(sender, instance, **kwargs):
+    records = Record.objects.filter(domain=instance)
+    for record in records:
+        # recall signals on Record
+        record.save(force_update=True)
+
+
 @receiver(post_save, sender=Record, dispatch_uid='record_create_ptr')
 def create_ptr(sender, instance, **kwargs):
-    if instance.auto_ptr == AutoPtrOptions.NEVER or instance.type != 'A':
+    if (
+        instance.domain.auto_ptr == AutoPtrOptions.NEVER or
+        instance.type != 'A'
+    ):
         instance.delete_ptr()
         return
     instance.create_ptr()
