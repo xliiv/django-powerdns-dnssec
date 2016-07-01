@@ -111,11 +111,10 @@ class TestAutoPtr(TestCase):
 
     def test_record_update_wont_create_auto_ptr_when_never_set(self):
         record = RecordFactory(
-            domain=self.domain,
+            domain=self.no_ptr_domain,
             type='A',
             name='site.example.com',
             content='192.168.1.1',
-            auto_ptr=AutoPtrOptions.NEVER,
         )
 
         self.assertEqual(
