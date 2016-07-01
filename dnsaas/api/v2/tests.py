@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+import unittest
 from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
@@ -21,8 +22,8 @@ from powerdns.tests.utils import (
     RecordRequestFactory,
     UserFactory
 )
-from powerdns.utils import AutoPtrOptions
 from dnsaas.api.v2.views import RecordViewSet
+from dnsaas.api.v2.serializers import RecordRequestSerializer
 
 
 class TestApi(TestCase):
@@ -48,20 +49,17 @@ class TestApi(TestCase):
             RecordFactory(
                 type='A', name='example{}.com'.format(i),
                 content='192.168.0.{}'.format(i),
-                auto_ptr=AutoPtrOptions.ALWAYS,
                 domain=domain,
 
             )
             RecordFactory(
                 type='CNAME', name='www.example{}.com'.format(i),
                 content='example{}.com'.format(i),
-                auto_ptr=AutoPtrOptions.NEVER,
                 domain=domain,
             )
             RecordFactory(
                 type='TXT', name='example{}.com'.format(i),
                 content='Some information{}'.format(i),
-                auto_ptr=AutoPtrOptions.NEVER,
                 domain=domain,
             )
 
@@ -215,13 +213,69 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record_request.owner, self.super_user)
         self.assertEqual(record_request.target_owner, self.super_user)
 
+    def test_record_creation_dumps_history_data_correctly(self):
+        self.client.login(username='super_user', password='super_user')
+        domain = DomainFactory(name='example.com', owner=self.super_user)
+        data = {
+            'type': 'CNAME',
+            'domain': domain.id,
+            'name': 'example.com',
+            'content': '192.168.0.1',
+        }
+        response = self.client.post(
+            reverse('api:v2:record-list'), data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        record_request = RecordRequest.objects.get(
+            record_id=response.data['id']
+        )
+        self.assertEqual(record_request.last_change_json, {
+            'content': {'new': '192.168.0.1', 'old': ''},
+            'name': {'new': 'example.com', 'old': ''},
+            'owner': {'new': 'super_user', 'old': ''},
+            'prio': {'new': '', 'old': ''},
+            'remarks': {'new': '', 'old': ''},
+            'ttl': {'new': 3600, 'old': ''},
+            'type': {'new': 'CNAME', 'old': ''},
+            '_request_type': 'create',
+        })
+
+    def test_rejected_record_creation_dumps_history_correctly(self):
+        self.client.login(username='regular_user1', password='regular_user1')
+        domain = DomainFactory(name='example.com', owner=self.super_user)
+        data = {
+            'type': 'CNAME',
+            'domain': domain.id,
+            'name': 'www.example.com',
+            'content': 'example.com',
+        }
+        response = self.client.post(
+            reverse('api:v2:record-list'), data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        record_request = RecordRequest.objects.get(
+            id=response.data['record_request_id']
+        )
+
+        self.assertFalse(record_request.last_change_json)
+        record_request.reject()
+        self.assertEqual(record_request.last_change_json, {
+            'content': {'new': 'example.com', 'old': ''},
+            'name': {'new': 'www.example.com', 'old': ''},
+            'owner': {'new': 'regular_user1', 'old': ''},
+            'prio': {'new': '', 'old': ''},
+            'remarks': {'new': '', 'old': ''},
+            'ttl': {'new': 3600, 'old': ''},
+            'type': {'new': 'CNAME', 'old': ''},
+            '_request_type': 'create',
+        })
+
     #
     # updates
     #
     def test_update_record_when_recordrequest_doesnt_exist(self):
         self.client.login(username='super_user', password='super_user')
         record = RecordFactory(
-            auto_ptr=AutoPtrOptions.NEVER.id,
             type='A',
             name='blog.com',
             content='192.168.1.0',
@@ -244,7 +298,6 @@ class TestRecords(BaseApiTestCase):
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
             state=RequestStates.ACCEPTED.id,
-            record__auto_ptr=AutoPtrOptions.NEVER.id,
             record__type='A',
             record__name='blog.com',
             record__content='192.168.1.0',
@@ -273,7 +326,6 @@ class TestRecords(BaseApiTestCase):
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
             state=RequestStates.OPEN.id,
-            record__auto_ptr=AutoPtrOptions.NEVER.id,
             record__type='A',
             record__name='blog.com',
             record__content='192.168.1.0',
@@ -301,7 +353,6 @@ class TestRecords(BaseApiTestCase):
         self.client.login(username='super_user', password='super_user')
         record_request = RecordRequestFactory(
             state=RequestStates.OPEN.id,
-            record__auto_ptr=AutoPtrOptions.NEVER.id,
             record__type='A',
             record__name='blog.com',
             record__content='192.168.1.0',
@@ -329,7 +380,6 @@ class TestRecords(BaseApiTestCase):
     def test_user_is_set_correct_when_updating_record_with_owner(self):
         self.client.login(username='super_user', password='super_user')
         record = RecordFactory(
-            auto_ptr=AutoPtrOptions.NEVER.id,
             type='A',
             name='blog.com',
             content='192.168.1.0',
@@ -355,7 +405,6 @@ class TestRecords(BaseApiTestCase):
     def test_user_is_set_correct_when_updating_record_without_owner(self):
         self.client.login(username='super_user', password='super_user')
         record = RecordFactory(
-            auto_ptr=AutoPtrOptions.NEVER.id,
             type='A',
             name='blog.com',
             content='192.168.1.0',
@@ -385,7 +434,6 @@ class TestRecords(BaseApiTestCase):
         """
         self.client.login(username='regular_user1', password='regular_user1')
         record = RecordFactory(
-            auto_ptr=AutoPtrOptions.NEVER.id,
             type='A',
             name='blog.com',
             remarks='initial remarks',
@@ -406,6 +454,77 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record.owner, self.regular_user2)
         self.assertEqual(record.remarks, 'updated remarks')
 
+    def test_record_update_dumps_history_data_correctly(self):
+        self.client.login(username='super_user', password='super_user')
+        record = RecordFactory(
+            auto_ptr=AutoPtrOptions.NEVER.id,
+            type='A',
+            name='blog.com',
+            content='192.168.1.0',
+            owner=self.regular_user1,
+        )
+        new_name = 'new-' + record.name
+        response = self.client.patch(
+            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            data={
+                'name': new_name
+            },
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        record_request = RecordRequest.objects.get(
+            record_id=response.data['id']
+        )
+        self.assertEqual(record_request.last_change_json['name'], {
+            'old': record.name,
+            'new': new_name,
+        })
+        self.assertEqual(record_request.last_change_json['remarks'], {
+            'old': record.remarks,
+            'new': record.remarks,
+        })
+
+    def test_rejected_record_update_dumps_history_correctly(self):
+        self.client.login(username='regular_user1', password='regular_user1')
+        data = {
+            'domain': DomainFactory(name='example.com', owner=self.super_user),
+            'type': 'CNAME',
+            'name': 'www.example.com',
+            'content': 'example.com',
+            'remarks': 'initial',
+            'owner': self.regular_user1,
+        }
+        to_update = RecordFactory(**data)
+        response = self.client.patch(
+            reverse('api:v2:record-detail', kwargs={'pk': to_update.pk}),
+            data={'remarks': 'update'},
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        record_request = RecordRequest.objects.get(
+            id=response.data['record_request_id']
+        )
+
+        self.assertFalse(record_request.last_change_json)
+        record_request.reject()
+        self.assertEqual(record_request.last_change_json, {
+            'content': {'new': '', 'old': data['content']},
+            'name': {'new': '', 'old': data['name']},
+            'owner': {'new': '', 'old': data['owner'].username},
+            'prio': {'new': '', 'old': ''},
+            'remarks': {'new': 'update', 'old': data['remarks']},
+            # old=3600 its because it's model default
+            # when update request is send, new RecordRequest is created
+            # if user doesn't specify ttl (or other value which has default)
+            # it is set on model and diff uses models value which are already
+            # set, so it can't be distinguish if eg. 3600 was from default of
+            # from user
+            'ttl': {'new': 3600, 'old': 3600},
+            'type': {'new': '', 'old': data['type']},
+            '_request_type': 'update',
+        })
+
     #
     # deletion
     #
@@ -414,7 +533,6 @@ class TestRecords(BaseApiTestCase):
         self.client.login(username='super_user', password='super_user')
         record_request = RecordRequestFactory(
             state=RequestStates.OPEN.id,
-            record__auto_ptr=AutoPtrOptions.NEVER.id,
             record__type='A',
             record__name='blog.com',
             record__content='192.168.1.0',
@@ -446,7 +564,6 @@ class TestRecords(BaseApiTestCase):
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
             state=RequestStates.ACCEPTED.id,
-            record__auto_ptr=AutoPtrOptions.NEVER.id,
             record__type='A',
             record__name='blog.com',
             record__content='192.168.1.0',
@@ -474,7 +591,6 @@ class TestRecords(BaseApiTestCase):
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
             state=RequestStates.OPEN.id,
-            record__auto_ptr=AutoPtrOptions.NEVER.id,
             record__type='A',
             record__name='blog.com',
             record__content='192.168.1.0',
@@ -497,6 +613,42 @@ class TestRecords(BaseApiTestCase):
             ).count(),
             0,
         )
+
+    def test_record_deletion_dumps_history_data_correctly(self):
+        self.client.login(username='super_user', password='super_user')
+        record_request = RecordRequestFactory(
+            state=RequestStates.OPEN.id,
+            record__auto_ptr=AutoPtrOptions.NEVER.id,
+            record__type='A',
+            record__name='blog.com',
+            record__content='192.168.1.0',
+        )
+        response = self.client.delete(
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record_request.record.pk},
+            ),
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        delete_request = DeleteRequest.objects.get(
+            target_id=record_request.record_id
+        )
+        self.assertEqual(delete_request.last_change_json, {
+            'content': {'new': '', 'old': '192.168.1.0'},
+            'name': {'new': '', 'old': 'blog.com'},
+            'owner': {'new': '', 'old': record_request.record.owner.username},
+            'prio': {'new': '', 'old': ''},
+            'remarks': {'new': '', 'old': ''},
+            'ttl': {'new': '', 'old': 3600},
+            'type': {'new': '', 'old': 'A'},
+            '_request_type': 'delete',
+        })
+
+    @unittest.skip("todo when DeleteRequest and ChangeRequest are unified")
+    def test_rejected_record_deletion_dumps_history_correctly(self):
+        pass
 
 
 class TestRecordValidation(BaseApiTestCase):
@@ -558,3 +710,64 @@ class TestObtainAuthToken(TestCase):
             format='json',
         )
         self.assertEqual(response.status_code, 400)
+
+
+class TestRecordRequestSerializer(TestCase):
+
+    def setUp(self):  # noqa
+        self.client = APIClient()  # do not login
+        self.user = UserFactory()
+
+    def test_last_change_comes_from_dump_when_status_not_open(self):
+        rr = RecordRequestFactory(
+            state=RequestStates.OPEN, target_remarks='initial',
+        )
+        rr.accept()
+        serializer = RecordRequestSerializer(rr)
+
+        self.assertEqual(serializer.instance.record.remarks, 'initial')
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['new'],
+            'initial',
+        )
+
+        rr.record.remarks = 'updated'
+        rr.record.save()
+        rr.refresh_from_db()
+
+        serializer = RecordRequestSerializer(rr)
+        self.assertEqual(serializer.instance.record.remarks, 'updated')
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['new'],
+            'initial',
+        )
+
+    def test_last_change_is_calculated_when_status_open(self):
+        rr = RecordRequestFactory(
+            state=RequestStates.OPEN, target_remarks='update 1',
+            record__remarks='initial'
+        )
+        serializer = RecordRequestSerializer(rr)
+
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['old'],
+            rr.get_object().remarks,
+        )
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['new'],
+            serializer.instance.target_remarks
+        )
+
+        rr.record.remarks = 'update 2'
+        rr.record.save()
+        rr.refresh_from_db()
+
+        serializer = RecordRequestSerializer(rr)
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['old'],
+            rr.get_object().remarks,
+        )
+        self.assertEqual(
+            serializer.data['last_change']['remarks']['new'],
+            serializer.instance.target_remarks
+        )

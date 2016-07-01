@@ -294,6 +294,14 @@ class Domain(TimeTrackable, Owned, WithRequests):
             )
         )
 
+    def as_empty_history(self):
+        """We don't care about domain history for now"""
+        return {}
+
+    def as_history_dump(self):
+        """We don't care about domain history for now"""
+        return {}
+
 
 rules.add_perm('powerdns', rules.is_authenticated)
 rules.add_perm('powerdns.add_domain', rules.is_superuser)
@@ -386,11 +394,6 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             'should be automatically updated/deleted. Used for PTR records'
             'that depend on A records.'
         )
-    )
-    auto_ptr = ChoiceField(
-        _('Auto PTR record'),
-        choices=AutoPtrOptions,
-        default=AutoPtrOptions.ALWAYS,
     )
 
     class Meta:
@@ -572,7 +575,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         if self.type != 'A':
             raise ValueError(_('Creating PTR only for A records'))
         domain_name, number = to_reverse(self.content)
-        if self.auto_ptr == AutoPtrOptions.ALWAYS:
+        if self.domain.auto_ptr == AutoPtrOptions.ALWAYS:
             domain, created = Domain.objects.get_or_create(
                 name=domain_name,
                 defaults={
@@ -583,7 +586,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
                     'type': self.domain.type,
                 }
             )
-        elif self.auto_ptr == AutoPtrOptions.ONLY_IF_DOMAIN:
+        elif self.domain.auto_ptr == AutoPtrOptions.ONLY_IF_DOMAIN:
             try:
                 domain = Domain.objects.get(name=domain_name)
             except Domain.DoesNotExist:
@@ -612,6 +615,27 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             )
         )
 
+    def as_empty_history(self):
+        return {
+            'content': '',
+            'name': '',
+            'owner': '',
+            'prio': '',
+            'remarks': '',
+            'ttl':  '',
+            'type':  '',
+        }
+
+    def as_history_dump(self):
+        return {
+            'content': self.content or '',
+            'name': self.name or '',
+            'owner': getattr(self.owner, 'username', ''),
+            'prio': self.prio or '',
+            'remarks': self.remarks or '',
+            'ttl':  self.ttl or '',
+            'type':  self.type or '',
+        }
 
 rules.add_perm('powerdns.add_record', rules.is_authenticated)
 rules.add_perm('powerdns.change_record', rules.is_authenticated)
@@ -627,9 +651,20 @@ def update_serial(sender, instance, **kwargs):
         soa.save()
 
 
+@receiver(post_save, sender=Domain, dispatch_uid='domain_update_ptr')
+def update_ptr(sender, instance, **kwargs):
+    records = Record.objects.filter(domain=instance)
+    for record in records:
+        # recall signals on Record
+        record.save(force_update=True)
+
+
 @receiver(post_save, sender=Record, dispatch_uid='record_create_ptr')
 def create_ptr(sender, instance, **kwargs):
-    if instance.auto_ptr == AutoPtrOptions.NEVER or instance.type != 'A':
+    if (
+        instance.domain.auto_ptr == AutoPtrOptions.NEVER or
+        instance.type != 'A'
+    ):
         instance.delete_ptr()
         return
     instance.create_ptr()
