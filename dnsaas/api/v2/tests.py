@@ -328,6 +328,35 @@ class TestRecords(BaseApiTestCase):
             2,
         )
 
+    def test_update_record_when_record_is_mine_but_domain_not(self):
+        self.client.login(username='regular_user1', password='regular_user1')
+        record = RecordFactory(
+            domain=DomainFactory(
+                name='blog.com', owner=self.super_user, unrestricted=False,
+            ),
+            type='A',
+            name='blog.com',
+            content='192.168.0.1',
+            remarks='initial',
+            auto_ptr=AutoPtrOptions.NEVER.id,
+            owner=self.regular_user1,
+        )
+
+        new_name = 'new-' + record.name
+        response = self.client.patch(
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record.pk},
+            ),
+            data={'name': new_name},
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        record.refresh_from_db()
+        self.assertEqual(record.name, new_name)
+
     def test_reject_update_when_request_already_exists(self):
         self.client.login(username='regular_user1', password='regular_user1')
         record_request = RecordRequestFactory(
@@ -504,7 +533,7 @@ class TestRecords(BaseApiTestCase):
             'name': 'www.example.com',
             'content': 'example.com',
             'remarks': 'initial',
-            'owner': self.regular_user1,
+            'owner': self.super_user,
         }
         to_update = RecordFactory(**data)
         response = self.client.patch(
@@ -596,6 +625,34 @@ class TestRecords(BaseApiTestCase):
                 target_id=record_request.record.id
             ).count(),
             1,
+        )
+
+    def test_delete_record_when_record_is_mine_but_domain_not(self):
+        self.client.login(username='regular_user1', password='regular_user1')
+        record = RecordFactory(
+            domain=DomainFactory(
+                name='blog.com', owner=self.super_user, unrestricted=False,
+            ),
+            type='A',
+            name='blog.com',
+            content='192.168.0.1',
+            remarks='initial',
+            auto_ptr=AutoPtrOptions.NEVER.id,
+            owner=self.regular_user1,
+        )
+        response = self.client.delete(
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record.pk},
+            ),
+            format='json', **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        with self.assertRaises(Record.DoesNotExist):
+            self.assertFalse(Record.objects.get(id=record.id))
+        self.assertEqual(
+            DeleteRequest.objects.filter(target_id=record.id).get().state,
+            RequestStates.ACCEPTED,
         )
 
     def test_user_cant_delete_record_with_opened_request(self):

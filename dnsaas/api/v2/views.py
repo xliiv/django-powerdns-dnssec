@@ -191,7 +191,6 @@ class RecordViewSet(OwnerViewSet):
         record_request.record = serializer.instance
 
         if (
-            serializer.instance.domain.can_auto_accept(request.user) and
             instance.can_auto_accept(request.user)
         ):
             serializer.instance = record_request.accept()
@@ -233,7 +232,6 @@ class RecordViewSet(OwnerViewSet):
             owner=request.user, target=instance,
         )
         if (
-            instance.domain.can_auto_accept(request.user) and
             instance.can_auto_accept(request.user)
         ):
             delete_request.accept()
