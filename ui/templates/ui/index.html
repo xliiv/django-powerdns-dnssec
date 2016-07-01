@@ -8,16 +8,22 @@
   <script type="text/javascript" src="{% static "lib/jquery/dist/jquery.min.js" %}"></script>
   <script src="{% static "lib/raven-js/dist/raven.min.js" %}"></script>
   <script src="{% static "lib/es6-shim/es6-shim.min.js" %}"></script>
-  <script src="{% static "lib/zone.js/dist/zone.js" %}?main=browser"></script>
+  <script src="{% static "lib/zone.js/dist/zone.min.js" %}?main=browser"></script>
   <script src="{% static "lib/reflect-metadata/Reflect.js" %}"></script>
-  <script src="{% static "lib/systemjs/dist/system.src.js" %}"></script>
+  <script src="{% static "lib/systemjs/dist/system.js" %}"></script>
   <script src="{% static "systemjs.config.js" %}"></script>
   <script>
-    var debug = {% if settings.TEMPLATE_DEBUG %}true{% else %}false{% endif %};
-    var ravenEnabled = false;
+    var globalConfig = {
+      debug: {% if settings.DEBUG %}true{% else %}false{% endif %},
+      ravenEnabled: false,
+      domainUrl: "{% url 'api:v2:domain-list' %}",
+      recordUrl: "{% url 'api:v2:record-list' %}",
+      recordRequestUrl: "{% url 'api:v2:recordrequest-list' %}",
+      homeUrl: "{% url 'home' %}"
+    };
     {% if settings.SENTRY_JS_DSN %}
        Raven.config("{{ settings.SENTRY_JS_DSN }}", {{ settings.SENTRY_JS_CONFIG|safe }}).install();
-       ravenEnabled = true;
+       globalConfig["ravenEnabled"] = true;
     {% endif %}
     System.import('{% static "dist/main" %}').then(null, console.error.bind(console));
   </script>
@@ -28,14 +34,20 @@
   <footer class="footer">
     <div class="container">
       <div class="row">
-        <div class="col-md-offset-7 col-md-3">
-          <a href="{{ settings.NEW_FEATURE_URL }}">
+        <div class="col-md-3 powered">
+          Powered by pyLabs & XWING
+        </div>
+        <div class="col-md-4">
+          <img src="{% static 'pylabs.png' %}" />
+        </div>
+        <div class="col-md-3">
+          <a href="{{ settings.NEW_FEATURE_URL }}" target="_blank">
             <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
             Request new feature
           </a>
         </div>
         <div class="col-md-2">
-          <a href="{{ settings.REPORT_BUG_URL }}">
+          <a href="{{ settings.REPORT_BUG_URL }}" target="_blank">
             <span class="glyphicon glyphicon-fire" aria-hidden="true"></span>
             Report a bug
           </a>

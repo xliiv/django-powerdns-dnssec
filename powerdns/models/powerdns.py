@@ -178,7 +178,7 @@ class Domain(TimeTrackable, Owned, WithRequests):
         ('NATIVE', 'NATIVE'),
         ('SLAVE', 'SLAVE'),
     )
-    copy_fields = ['record_auto_ptr']
+    copy_fields = ['auto_ptr']
     name = models.CharField(
         _("name"),
         unique=True,
@@ -217,7 +217,7 @@ class Domain(TimeTrackable, Owned, WithRequests):
             'template.'
         )
     )
-    record_auto_ptr = ChoiceField(
+    auto_ptr = ChoiceField(
         choices=AutoPtrOptions,
         default=AutoPtrOptions.ALWAYS,
         help_text=_(
