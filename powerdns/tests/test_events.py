@@ -45,3 +45,23 @@ class TestSOASerialUpdate(RecordTestCase):
         self.a_record.delete()
         new_serial = Record.objects.get(pk=self.soa_record.pk).change_date
         self.assertGreater(new_serial, old_serial)
+
+
+from django.test import TestCase
+class TestAutoTXTRecords(TestCase):
+    def test_record_is_created(self):
+        from powerdns.models.powerdns import _update_auto_txt
+        domain = DomainFactory(name='example.com')
+        data = [{
+            'name': '.'.join(['www', domain.name]),
+            'type': 'TXT',
+            'content': 'content',
+            'subtype': 'SOMETYPE',
+        }]
+        # check no
+        self.assertEqual(Record.objects.all(), 0))
+        _update_auto_txt(data)
+        # check yes
+        record = Record.objects.get()
+        for field_name in ['name', 'type', 'content', 'subtype']:
+            self.assertEqual(getattr(record, field_name), data[field_name])

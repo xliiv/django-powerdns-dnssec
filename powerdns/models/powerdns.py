@@ -736,8 +736,8 @@ except ImportError:
     pass
 else:
     if settings.TXT_AUTOUPDATE_TOPIC_NAME:
-        @pyhermes.subscriber(topic=settings.TXT_AUTOUPDATE_TOPIC_NAME)
         @transaction.atomic
+        @pyhermes.subscriber(topic=settings.TXT_AUTOUPDATE_TOPIC_NAME)
         def _update_auto_txt(data):
             """
             Auto update txt records depending on pyhermes utility.
@@ -752,7 +752,7 @@ else:
             #TODO:: migrate data from old to new schema
             for record_data in data:
                 domain = ??
-                Person.objects.update_or_create(
+                Record.objects.update_or_create(
                     domain=domain,
                     name=record_data['name'],
                     type=record_data['type'],
