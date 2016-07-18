@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import logging
 import sys
 import time
 
@@ -29,6 +30,9 @@ from powerdns.utils import (
     to_reverse,
     validate_domain_name,
 )
+
+
+log = logging.getLogger(__name__)
 
 
 BASIC_RECORD_TYPES = (
@@ -723,3 +727,39 @@ class CryptoKey(TimeTrackable):
 
     def __str__(self):
         return self.domain
+
+
+
+try:
+    import pyhermes
+except ImportError:
+    pass
+else:
+    if settings.TXT_AUTOUPDATE_TOPIC_NAME:
+        @pyhermes.subscriber(topic=settings.TXT_AUTOUPDATE_TOPIC_NAME)
+        @transaction.atomic
+        def _update_auto_txt(data):
+            """
+            Auto update txt records depending on pyhermes utility.
+
+            data = [{
+                'name': 'www.example.com',
+                'type': 'TXT',
+                'content': 'new or update value',
+                'subtype': 'SOME_TYPE',
+            }, ..]
+            """
+            #TODO:: migrate data from old to new schema
+            for record_data in data:
+                domain = ??
+                Person.objects.update_or_create(
+                    domain=domain,
+                    name=record_data['name'],
+                    type=record_data['type'],
+                    subtype=record_data['subtype'],
+                    defaults={'content': record_data['content']},
+                )
+    else:
+        log.info(
+            "auto txt update - DISABLED (no setting TXT_AUTOUPDATE_TOPIC_NAME set)"  # noqa
+        )

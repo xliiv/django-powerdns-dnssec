@@ -239,3 +239,7 @@ if not TESTING:
         from settings_local import *  # noqa
     except ImportError:
         pass
+
+
+# pyhermes topic where messages about auto txt records are announced
+TXT_AUTOUPDATE_TOPIC_NAME = None
