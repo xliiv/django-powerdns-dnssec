@@ -50,7 +50,7 @@ class TestSOASerialUpdate(RecordTestCase):
 from django.test import TestCase
 class TestAutoTXTRecords(TestCase):
     def test_record_is_created(self):
-        from powerdns.models.powerdns import _update_auto_txt
+        from powerdns.models.powerdns import _update_records
         domain = DomainFactory(name='example.com')
         data = [{
             'name': '.'.join(['www', domain.name]),
@@ -60,7 +60,7 @@ class TestAutoTXTRecords(TestCase):
         }]
         # check no
         self.assertEqual(Record.objects.all(), 0))
-        _update_auto_txt(data)
+        _update_records(data)
         # check yes
         record = Record.objects.get()
         for field_name in ['name', 'type', 'content', 'subtype']:

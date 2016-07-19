@@ -729,37 +729,34 @@ class CryptoKey(TimeTrackable):
         return self.domain
 
 
+import pyhermes
+@transaction.atomic
+@pyhermes.subscriber(topic=settings.TXT_AUTOUPDATE_TOPIC_NAME)
+def _update_records(data):
+    """
+    Auto update txt records depending on pyhermes utility.
 
-try:
-    import pyhermes
-except ImportError:
-    pass
-else:
-    if settings.TXT_AUTOUPDATE_TOPIC_NAME:
-        @transaction.atomic
-        @pyhermes.subscriber(topic=settings.TXT_AUTOUPDATE_TOPIC_NAME)
-        def _update_auto_txt(data):
-            """
-            Auto update txt records depending on pyhermes utility.
-
-            data = [{
-                'name': 'www.example.com',
-                'type': 'TXT',
-                'content': 'new or update value',
-                'subtype': 'SOME_TYPE',
-            }, ..]
-            """
-            #TODO:: migrate data from old to new schema
-            for record_data in data:
-                domain = ??
-                Record.objects.update_or_create(
-                    domain=domain,
-                    name=record_data['name'],
-                    type=record_data['type'],
-                    subtype=record_data['subtype'],
-                    defaults={'content': record_data['content']},
-                )
-    else:
-        log.info(
-            "auto txt update - DISABLED (no setting TXT_AUTOUPDATE_TOPIC_NAME set)"  # noqa
+    data = [{
+        'name': 'www.example.com',
+        'type': 'TXT',
+        'content': 'new or update value',
+        'subtype': 'SOME_TYPE',
+    }, ..]
+    """
+    #TODO:: migrate data from old to new schema
+    #TODO:: create also recordrequest
+    #TODO:: fill target_owner=from data
+    #TODO:: fill owner=from data
+    for record_data in data:
+        domain = ??
+        Record.objects.update_or_create(
+            domain=domain,
+            name=record_data['name'],
+            type=record_data['type'],
+            subtype=record_data['subtype'],
+            defaults={'content': record_data['content']},
         )
+else:
+log.info(
+    "auto txt update - DISABLED (no setting TXT_AUTOUPDATE_TOPIC_NAME set)"  # noqa
+)

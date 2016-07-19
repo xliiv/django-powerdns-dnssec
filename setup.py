@@ -63,6 +63,7 @@ setup(
         'django-filter>=0.10.0',
         'django-threadlocals>=0.8',
         'docutils>=0.12',
+        'pyhermes==0.1.3',
         'rules>=0.4',
         'raven==5.20.0'
     ],
