@@ -31,6 +31,14 @@ from powerdns.utils import (
 )
 
 
+def _get_model_name(obj):
+    # shame, shame, shame :P
+    mapping = {
+        'dnsaasrecord': 'record',
+    }
+    object_name = type(obj)._meta.object_name.lower()
+    return mapping[object_name] if object_name in mapping else object_name
+
 BASIC_RECORD_TYPES = (
     'A', 'AAAA', 'CNAME', 'HINFO', 'MX', 'NAPTR', 'NS', 'PTR', 'SOA', 'SRV',
     'TXT',
@@ -128,7 +136,7 @@ class WithRequests(models.Model):
         def result(self):
             def fmt(str_, **kwargs):
                 return str_.format(
-                    obj=type(self)._meta.object_name.lower(),
+                    obj=_get_model_name(self),
                     opr=operation,
                     **kwargs
                 )
@@ -158,7 +166,7 @@ class WithRequests(models.Model):
                 reverse(
                     fmt('admin:powerdns_{obj}request_add')
                 ) + '?{}={}'.format(
-                    type(self)._meta.object_name.lower(),
+                    _get_model_name(self),
                     self.pk
                 )
             )
@@ -262,7 +270,7 @@ class Domain(TimeTrackable, Owned, WithRequests):
 
     def add_record_url(self, authorised):
         """Return URL for 'Add record' action"""
-        model = 'record' if authorised else 'recordrequest'
+        model = 'dnsaasrecord' if authorised else 'recordrequest'
         return (
             reverse('admin:powerdns_{}_add'.format(model)) +
             '?domain={}'.format(self.pk)
@@ -426,7 +434,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         def result(self):
             def fmt(str_, **kwargs):
                 return str_.format(
-                    obj=type(self)._meta.object_name.lower(),
+                    obj=_get_model_name(self),
                     opr=operation,
                     **kwargs
                 )
@@ -459,7 +467,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
                 reverse(
                     fmt('admin:powerdns_{obj}request_add')
                 ) + '?{}={}'.format(
-                    type(self)._meta.object_name.lower(),
+                    _get_model_name(self),
                     self.pk
                 )
             )
