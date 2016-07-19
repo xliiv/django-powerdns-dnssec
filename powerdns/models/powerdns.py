@@ -670,7 +670,9 @@ class DNSaaSRecord(Record):
 
 # When we delete a record, the zone changes, but there no change_date is
 # updated. We update the SOA record, so the serial changes
-@receiver(post_delete, sender=DNSaaSRecord, dispatch_uid='record_update_serial')
+@receiver(
+    post_delete, sender=DNSaaSRecord, dispatch_uid='record_update_serial'
+)
 def update_serial(sender, instance, **kwargs):
     soa = instance.domain.get_soa()
     if soa:
