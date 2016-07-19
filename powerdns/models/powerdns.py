@@ -653,6 +653,15 @@ rules.add_perm('powerdns.change_record', rules.is_authenticated)
 rules.add_perm('powerdns.delete_record', rules.is_authenticated)
 
 
+
+# mv it to dnsaas app?
+class DNSaaSRecord(Record):
+    purpose = models.CharField(_("purpose"), max_length=255)
+
+
+
+
+
 # When we delete a record, the zone changes, but there no change_date is
 # updated. We update the SOA record, so the serial changes
 @receiver(post_delete, sender=Record, dispatch_uid='record_update_serial')
