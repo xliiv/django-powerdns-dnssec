@@ -115,7 +115,7 @@ class TestRecords(BaseApiTestCase):
             'content': '192.168.0.1',
         }
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:dnsaasrecord-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -130,7 +130,7 @@ class TestRecords(BaseApiTestCase):
             'content': '192.168.0.1',
         }
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:dnsaasrecord-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -145,7 +145,7 @@ class TestRecords(BaseApiTestCase):
             'content': '192.168.0.1',
         }
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:dnsaasrecord-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
@@ -166,7 +166,7 @@ class TestRecords(BaseApiTestCase):
             'content': '10.0.0.0',
         }
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:dnsaasrecord-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -185,7 +185,7 @@ class TestRecords(BaseApiTestCase):
             'owner': self.regular_user1.username,
         }
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:dnsaasrecord-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -206,7 +206,7 @@ class TestRecords(BaseApiTestCase):
             'content': '192.168.0.1',
         }
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:dnsaasrecord-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -227,7 +227,7 @@ class TestRecords(BaseApiTestCase):
             'content': '192.168.0.1',
         }
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:dnsaasrecord-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         record_request = RecordRequest.objects.get(
@@ -254,7 +254,7 @@ class TestRecords(BaseApiTestCase):
             'content': 'example.com',
         }
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:dnsaasrecord-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         record_request = RecordRequest.objects.get(
@@ -287,7 +287,7 @@ class TestRecords(BaseApiTestCase):
         )
         new_name = 'new-' + record.name
         response = self.client.patch(
-            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            reverse('api:v2:dnsaasrecord-detail', kwargs={'pk': record.pk}),
             data={'name': new_name},
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
@@ -311,7 +311,7 @@ class TestRecords(BaseApiTestCase):
         new_name = 'new-' + record_request.record.name
         response = self.client.patch(
             reverse(
-                'api:v2:record-detail',
+                'api:v2:dnsaasrecord-detail',
                 kwargs={'pk': record_request.record.pk},
             ),
             data={'name': new_name},
@@ -340,7 +340,7 @@ class TestRecords(BaseApiTestCase):
         new_name = 'new-' + record_request.record.name
         response = self.client.patch(
             reverse(
-                'api:v2:record-detail',
+                'api:v2:dnsaasrecord-detail',
                 kwargs={'pk': record_request.record.pk},
             ),
             data={'name': new_name},
@@ -368,7 +368,7 @@ class TestRecords(BaseApiTestCase):
         new_name = 'new-' + record_request.record.name
         response = self.client.patch(
             reverse(
-                'api:v2:record-detail',
+                'api:v2:dnsaasrecord-detail',
                 kwargs={'pk': record_request.record.pk},
             ),
             data={'name': new_name},
@@ -396,7 +396,7 @@ class TestRecords(BaseApiTestCase):
         )
         new_name = 'new-' + record.name
         response = self.client.patch(
-            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            reverse('api:v2:dnsaasrecord-detail', kwargs={'pk': record.pk}),
             data={
                 'name': new_name,
                 'owner': self.regular_user2.username,
@@ -422,7 +422,7 @@ class TestRecords(BaseApiTestCase):
         )
         new_name = 'new-' + record.name
         response = self.client.patch(
-            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            reverse('api:v2:dnsaasrecord-detail', kwargs={'pk': record.pk}),
             data={'name': new_name},
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
@@ -452,7 +452,7 @@ class TestRecords(BaseApiTestCase):
             owner=self.super_user,
         )
         response = self.client.patch(
-            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            reverse('api:v2:dnsaasrecord-detail', kwargs={'pk': record.pk}),
             data={'remarks': 'updated remarks'},
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
@@ -476,7 +476,7 @@ class TestRecords(BaseApiTestCase):
         )
         new_name = 'new-' + record.name
         response = self.client.patch(
-            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            reverse('api:v2:dnsaasrecord-detail', kwargs={'pk': record.pk}),
             data={
                 'name': new_name
             },
@@ -508,7 +508,7 @@ class TestRecords(BaseApiTestCase):
         }
         to_update = RecordFactory(**data)
         response = self.client.patch(
-            reverse('api:v2:record-detail', kwargs={'pk': to_update.pk}),
+            reverse('api:v2:dnsaasrecord-detail', kwargs={'pk': to_update.pk}),
             data={'remarks': 'update'},
             format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
@@ -551,7 +551,7 @@ class TestRecords(BaseApiTestCase):
         )
         response = self.client.delete(
             reverse(
-                'api:v2:record-detail',
+                'api:v2:dnsaasrecord-detail',
                 kwargs={'pk': record_request.record.pk},
             ),
             format='json',
@@ -583,7 +583,7 @@ class TestRecords(BaseApiTestCase):
         )
         response = self.client.delete(
             reverse(
-                'api:v2:record-detail',
+                'api:v2:dnsaasrecord-detail',
                 kwargs={'pk': record_request.record.pk},
             ),
             format='json',
@@ -611,7 +611,7 @@ class TestRecords(BaseApiTestCase):
         )
         response = self.client.delete(
             reverse(
-                'api:v2:record-detail',
+                'api:v2:dnsaasrecord-detail',
                 kwargs={'pk': record_request.record.pk},
             ),
             format='json',
@@ -639,7 +639,7 @@ class TestRecords(BaseApiTestCase):
         )
         response = self.client.delete(
             reverse(
-                'api:v2:record-detail',
+                'api:v2:dnsaasrecord-detail',
                 kwargs={'pk': record_request.record.pk},
             ),
             format='json',
@@ -676,7 +676,7 @@ class TestRecordValidation(BaseApiTestCase):
             'content': 'this-is-bad-bad-value-for-content',
         }
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:dnsaasrecord-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -692,7 +692,7 @@ class TestRecordValidation(BaseApiTestCase):
             'content': 'ThisIsBadBadValueForContent',
         }
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:dnsaasrecord-list'), data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

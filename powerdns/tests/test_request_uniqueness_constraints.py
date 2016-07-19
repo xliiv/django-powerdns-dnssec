@@ -4,7 +4,7 @@
 # The record requests should be validated like records
 from django.contrib.auth.models import User
 
-from powerdns.models.powerdns import Domain, Record
+from powerdns.models import Domain, Record
 from powerdns.tests.utils import RecordFactory, RecordTestCase
 from powerdns.models.requests import RecordRequest
 from powerdns.utils import AutoPtrOptions

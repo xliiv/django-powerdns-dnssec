@@ -215,7 +215,8 @@ OWNER_NOTIFICATIONS = {
         {object} and set its owner to you!
         """,
     ),
-    'Record': (
+    # TODO:: is this final solution?
+    'DNSaaSRecord': (
         'Record {object} created for you!',
         """
         User {creator-name} ({creator-email}) has created a record

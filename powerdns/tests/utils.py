@@ -9,7 +9,7 @@ from django.test import TestCase
 from factory.django import DjangoModelFactory
 from rest_framework.test import APIClient
 
-from powerdns.models.powerdns import Record, Domain
+from powerdns.models import Record, Domain
 from powerdns.models.requests import RecordRequest
 from powerdns.models.templates import RecordTemplate, DomainTemplate
 

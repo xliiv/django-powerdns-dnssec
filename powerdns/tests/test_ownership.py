@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.test import TestCase
 
-from powerdns.models.powerdns import Domain, Record
+from powerdns.models import Domain, Record
 from powerdns.tests.utils import DomainFactory, user_client
 
 

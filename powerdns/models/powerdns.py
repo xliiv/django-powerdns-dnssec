@@ -256,8 +256,8 @@ class Domain(TimeTrackable, Owned, WithRequests):
     def get_soa(self):
         """Returns the SOA record for this domain"""
         try:
-            return Record.objects.get(type='SOA', domain=self)
-        except Record.DoesNotExist:
+            return DNSaaSRecord.objects.get(type='SOA', domain=self)
+        except DNSaaSRecord.DoesNotExist:
             return
 
     def add_record_url(self, authorised):
@@ -553,7 +553,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
     def validate_for_conflicts(self):
         """Ensure this record doesn't conflict with other records."""
         def check_unique(comment, **kwargs):
-            conflicting = Record.objects.filter(**kwargs)
+            conflicting = DNSaaSRecord.objects.filter(**kwargs)
             if self.pk is not None:
                 conflicting = conflicting.exclude(pk=self.pk)
             if conflicting:
@@ -582,7 +582,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         super(Record, self).save(*args, **kwargs)
 
     def delete_ptr(self):
-        Record.objects.filter(depends_on=self).delete()
+        DNSaaSRecord.objects.filter(depends_on=self).delete()
 
     def create_ptr(self):
         """Creates a PTR record for A record creating a domain if necessary."""
@@ -609,7 +609,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             return
 
         self.delete_ptr()
-        Record.objects.create(
+        DNSaaSRecord.objects.create(
             type='PTR',
             domain=domain,
             name='.'.join([number, domain_name]),
@@ -651,9 +651,9 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             'type':  self.type or '',
         }
 
-rules.add_perm('powerdns.add_record', rules.is_authenticated)
-rules.add_perm('powerdns.change_record', rules.is_authenticated)
-rules.add_perm('powerdns.delete_record', rules.is_authenticated)
+rules.add_perm('powerdns.add_dnsaasrecord', rules.is_authenticated)
+rules.add_perm('powerdns.change_dnsaasrecord', rules.is_authenticated)
+rules.add_perm('powerdns.delete_dnsaasrecord', rules.is_authenticated)
 
 
 # mv it to dnsaas app?
@@ -663,19 +663,21 @@ class DNSaaSRecord(Record):
     Model Record is owned by powerdns application itself and should be stayed
     as is.
     """
-    purpose = models.CharField(_("purpose"), max_length=255)
+    purpose = models.CharField(
+        _("purpose"), max_length=255, blank=True, null=True,
+    )
 
 
 # When we delete a record, the zone changes, but there no change_date is
 # updated. We update the SOA record, so the serial changes
-@receiver(post_delete, sender=Record, dispatch_uid='record_update_serial')
+@receiver(post_delete, sender=DNSaaSRecord, dispatch_uid='record_update_serial')
 def update_serial(sender, instance, **kwargs):
     soa = instance.domain.get_soa()
     if soa:
         soa.save()
 
 
-@receiver(post_save, sender=Record, dispatch_uid='record_create_ptr')
+@receiver(post_save, sender=DNSaaSRecord, dispatch_uid='record_create_ptr')
 def create_ptr(sender, instance, **kwargs):
     if instance.auto_ptr == AutoPtrOptions.NEVER or instance.type != 'A':
         instance.delete_ptr()

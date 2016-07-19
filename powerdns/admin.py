@@ -14,7 +14,7 @@ from django.forms import (
 )
 from django.utils.translation import ugettext_lazy as _
 from django_extensions.admin import ForeignKeyAutocompleteAdmin
-from powerdns.models.powerdns import (
+from powerdns.models import (
     CryptoKey,
     Domain,
     DomainMetadata,

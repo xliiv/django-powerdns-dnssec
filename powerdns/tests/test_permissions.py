@@ -23,7 +23,7 @@ def get_url(model, obj_):
 
 
 get_domain_url = ft.partial(get_url, 'domain')
-get_record_url = ft.partial(get_url, 'record')
+get_record_url = ft.partial(get_url, 'dnsaasrecord')
 
 
 class TestPermissions(TestCase):
@@ -171,7 +171,7 @@ class TestPermissions(TestCase):
     def test_su_can_create_records(self):
         """Superuser can create records in domain she doesn't own."""
         request = self.su_client.post(
-            reverse('api:default:record-list'),
+            reverse('api:default:dnsaasrecord-list'),
             {
                 'name': 'site.u.example.com',
                 'content': '192.168.1.4',
@@ -185,7 +185,7 @@ class TestPermissions(TestCase):
     def test_user_can_create_records_in_her_domain(self):
         """Normal user can create records in domain she owns."""
         request = self.su_client.post(
-            reverse('api:default:record-list'),
+            reverse('api:default:dnsaasrecord-list'),
             {
                 'name': 'site.u.example.com',
                 'content': '192.168.1.4',
@@ -200,7 +200,7 @@ class TestPermissions(TestCase):
         """Normal user can create records in domain that is marked as
         'unrestricted'."""
         request = self.u_client.post(
-            reverse('api:default:record-list'),
+            reverse('api:default:dnsaasrecord-list'),
             {
                 'name': 'site.u.example.com',
                 'content': '192.168.1.4',
@@ -214,7 +214,7 @@ class TestPermissions(TestCase):
     def test_user_cant_create_records_in_other_domains(self):
         """Normal user can't create records in domain she doesn't own."""
         request = self.u_client.post(
-            reverse('api:default:record-list'),
+            reverse('api:default:dnsaasrecord-list'),
             {
                 'name': 'site.u.example.com',
                 'content': '192.168.1.4',
