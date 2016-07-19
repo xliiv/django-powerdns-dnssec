@@ -312,7 +312,10 @@ rules.add_perm('powerdns.delete_domain', can_delete)
 
 class Record(TimeTrackable, Owned, RecordLike, WithRequests):
     '''
-    PowerDNS DNS records
+    PowerDNS DNS records (keep this model unchanged)
+
+    To add fields on this model use DNSaaSRecord model instead.
+    This model is owned by powerDNS application and should stay as is.
     '''
     prefix = ''
     RECORD_TYPE = [(r, r) for r in RECORD_TYPES]
@@ -656,6 +659,11 @@ rules.add_perm('powerdns.delete_record', rules.is_authenticated)
 
 # mv it to dnsaas app?
 class DNSaaSRecord(Record):
+    """
+    This model is the right model to operate on Records.
+    Model Record is owned by powerdns application itself and should be stayed
+    as is.
+    """
     purpose = models.CharField(_("purpose"), max_length=255)
 
 
