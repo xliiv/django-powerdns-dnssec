@@ -7,7 +7,7 @@ from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 from dj.choices.fields import ChoiceField
 
-from powerdns.models.powerdns import Domain, Record
+from powerdns.models import Domain, Record
 from powerdns.utils import AutoPtrOptions
 
 

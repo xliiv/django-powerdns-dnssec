@@ -8,7 +8,7 @@ class Powerdns(AppConfig):
 
     def ready(self):
         import autocomplete_light.shortcuts as al
-        from powerdns.models.powerdns import Domain, Record
+        from powerdns.models import Domain, Record
         from django.contrib.auth.models import User
 
         class AutocompleteAuthItems(al.AutocompleteGenericBase):

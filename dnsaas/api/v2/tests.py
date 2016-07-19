@@ -9,7 +9,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory
 
-from powerdns.models.powerdns import Record
+from powerdns.models import Record
 from powerdns.models.requests import (
     DeleteRequest,
     RecordRequest,
