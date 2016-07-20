@@ -61,6 +61,10 @@ class RecordSerializer(OwnerSerializer):
         model = Record
         read_only_fields = ('change_date', 'ordername',)
 
+    depends_on = HyperlinkedRelatedField(
+        queryset=Record.objects.all(),
+        view_name='dnsaasrecord-detail',
+    )
     domain = HyperlinkedRelatedField(
         queryset=Domain.objects.all(),
         view_name='domain-detail',
