@@ -668,12 +668,13 @@ rules.add_perm('powerdns.delete_dnsaasrecord', rules.is_authenticated)
 class DNSaaSRecord(Record):
     """
     This model is the right model to operate on Records.
-    Model Record is owned by powerdns application itself and should be stayed
+    Model Record is owned by powerDNS application and should stay as is.
     as is.
     """
     purpose = models.CharField(
         _("purpose"), max_length=255, blank=True, null=True,
     )
+
     class Meta:
         verbose_name = "Record"
 

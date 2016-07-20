@@ -64,6 +64,7 @@ class RecordSerializer(OwnerSerializer):
     depends_on = HyperlinkedRelatedField(
         queryset=Record.objects.all(),
         view_name='dnsaasrecord-detail',
+        required=False,
     )
     domain = HyperlinkedRelatedField(
         queryset=Domain.objects.all(),
