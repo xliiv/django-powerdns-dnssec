@@ -674,6 +674,8 @@ class DNSaaSRecord(Record):
     purpose = models.CharField(
         _("purpose"), max_length=255, blank=True, null=True,
     )
+    class Meta:
+        verbose_name = "Record"
 
 
 # When we delete a record, the zone changes, but there no change_date is
