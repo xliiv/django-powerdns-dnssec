@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
+from powerdns.models.powerdns import _create_dnsaas_record
 
 
 def dnsaas_records_creation(apps, schema_editor):
@@ -12,20 +13,11 @@ def dnsaas_records_creation(apps, schema_editor):
     for record in apps.get_model('powerdns', 'Record').objects.filter(
         dnsaasrecord=None
     ).all():
-
-        #Record = apps.get_model('powerdns', 'Record')
-        DNSaaSRecord = apps.get_model('powerdns', 'DNSaaSRecord')
-
         print()
         print(apps.get_model('powerdns', 'Record').objects.count())
         print(apps.get_model('powerdns', 'DNSaaSRecord').objects.count())
 
-        dnsaas_record = DNSaaSRecord(record_ptr_id=record.pk)
-        data = record.__dict__
-        del data['id']
-        dnsaas_record.__dict__.update(data)
-        dnsaas_record.save()
-
+        _create_dnsaas_record(record)
         print(apps.get_model('powerdns', 'Record').objects.count())
         print(apps.get_model('powerdns', 'DNSaaSRecord').objects.count())
 

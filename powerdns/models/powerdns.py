@@ -90,6 +90,24 @@ b32_trans = maketrans_func(
     '0123456789ABCDEFGHIJKLMNOPQRSTUV'
 )
 
+
+def _create_dnsaas_record(powerdns_record):
+    """
+    Create DNSaaS record from powerDNS record.
+
+    Normally you don't want to use it.
+    It's mainly because of migration purposes.
+    """
+    dnsaas_record = DNSaaSRecord(record_ptr_id=powerdns_record.pk)
+    data = powerdns_record.__dict__.copy()
+    del data['id']
+    dnsaas_record.__dict__.update(data)
+    # TODO:: why?
+    dnsaas_record.purpose = ''
+    dnsaas_record.save()
+    return dnsaas_record
+
+
 # Validator for the domain names only in RFC-1035
 # PowerDNS considers the whole zone to be invalid if any of the records end
 # with a period so this custom validator is used to catch them
