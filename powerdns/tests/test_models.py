@@ -20,8 +20,13 @@ class TestDNSaaSRecord(TestCase):
         self.assertEqual(PowerDNSRecord.objects.count(), 1)
         self.maxDiff = None
         self.assertEqual(record.record_ptr_id, powerdns_record.id)
-        excluded = {'modified', 'purpose', 'record_ptr_id'}
-        self.assertEqual(
-            {k: v for k, v in record.__dict__.items() if k not in excluded},
-            {k: v for k, v in powerdns_record.__dict__.items() if k not in excluded},  # noqa
-        )
+
+        for key in [
+            'auth', 'auto_ptr', 'change_date', 'content', 'created',
+            'depends_on_id', 'disabled', 'domain_id', 'name', 'number',
+            'ordername', 'owner_id', 'prio', 'remarks', 'template_id', 'ttl',
+            'type',
+        ]:
+            self.assertEqual(
+                getattr(record, key), getattr(powerdns_record, key)
+            )
