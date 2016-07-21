@@ -8,7 +8,14 @@ def dnsaas_records_creation(apps, schema_editor):
     """
     Creates DNSaaSRecord for every Record.
     """
-    #Person = apps.get_model("yourappname", "Person")
+    apps.get_model('powerdns', 'DNSaaSRecord').objects.all()
+    for record in apps.get_model('powerdns', 'Record').objects.filter(
+        dnsaasrecord=None
+    ).all():
+        dnsaas_record = apps.get_model('powerdns', 'DNSaaSRecord').objects.create(
+            **record.__dict__
+        )
+        dnsaas_record.record_ptr = record
     raise Exception("TODO")
 
 
