@@ -12,10 +12,25 @@ def dnsaas_records_creation(apps, schema_editor):
     for record in apps.get_model('powerdns', 'Record').objects.filter(
         dnsaasrecord=None
     ).all():
-        dnsaas_record = apps.get_model('powerdns', 'DNSaaSRecord').objects.create(
-            **record.__dict__
-        )
-        dnsaas_record.record_ptr = record
+
+        #Record = apps.get_model('powerdns', 'Record')
+        DNSaaSRecord = apps.get_model('powerdns', 'DNSaaSRecord')
+
+        print()
+        print(apps.get_model('powerdns', 'Record').objects.count())
+        print(apps.get_model('powerdns', 'DNSaaSRecord').objects.count())
+
+        dnsaas_record = DNSaaSRecord(record_ptr_id=record.pk)
+        data = record.__dict__
+        del data['id']
+        dnsaas_record.__dict__.update(data)
+        dnsaas_record.save()
+
+        print(apps.get_model('powerdns', 'Record').objects.count())
+        print(apps.get_model('powerdns', 'DNSaaSRecord').objects.count())
+
+        import ipdb
+        ipdb.set_trace()
     raise Exception("TODO")
 
 
