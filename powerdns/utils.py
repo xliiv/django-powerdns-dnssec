@@ -145,8 +145,9 @@ class Owned(models.Model):
             settings.ENABLE_OWNER_NOTIFICATIONS and
             hasattr(self.owner, 'email')
         ):
+            from powerdns.models.powerdns import _get_model_name
             subject_template, content_template = settings.OWNER_NOTIFICATIONS[
-                type(self)._meta.object_name
+                _get_model_name(self)
             ]
             kwargs = {}
             for key, user in [
