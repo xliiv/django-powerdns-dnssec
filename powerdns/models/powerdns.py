@@ -665,7 +665,7 @@ rules.add_perm('powerdns.change_dnsaasrecord', rules.is_authenticated)
 rules.add_perm('powerdns.delete_dnsaasrecord', rules.is_authenticated)
 
 
-# mv it to dnsaas app?
+# TODO:: mv it to dnsaas app?
 class DNSaaSRecord(Record):
     """
     This model is the right model to operate on Records.

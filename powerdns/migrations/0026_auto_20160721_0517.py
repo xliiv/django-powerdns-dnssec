@@ -8,12 +8,12 @@ def dnsaas_records_creation(apps, schema_editor):
     """
     Creates DNSaaSRecord for every Record.
     """
-    cursor = connection.cursor()
-    SQL = """
-    INSERT INTO powerdns_dnsaasrecord (record_ptr_id)
-    SELECT id from records;
-    """.strip()
-    cursor.execute(SQL)
+    with connection.cursor() as c:
+        sql = """
+        INSERT INTO powerdns_dnsaasrecord (record_ptr_id)
+        SELECT id from records;
+        """.strip()
+        c.execute(sql)
 
 
 class Migration(migrations.Migration):
@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(
             dnsaas_records_creation,
-            #TODO:: reverse?
+            # no need for reverse
             reverse_code=lambda x, y: None
         )
     ]

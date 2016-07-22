@@ -3,7 +3,7 @@
 from django_migration_testcase import MigrationTest
 
 
-class MyMigrationTest(MigrationTest):
+class TestMigration(MigrationTest):
 
     app_name = 'powerdns'
     before = '0025_auto_20160721_0517'
