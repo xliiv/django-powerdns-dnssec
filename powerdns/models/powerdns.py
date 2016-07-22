@@ -31,8 +31,8 @@ from powerdns.utils import (
 )
 
 
-def _get_model_name(obj):
-    # shame, shame, shame :P
+def _get_domain_name(obj):
+    "Translate model name to domain name"
     mapping = {
         'dnsaasrecord': 'record',
     }
@@ -137,7 +137,7 @@ class WithRequests(models.Model):
         def result(self):
             def fmt(str_, **kwargs):
                 return str_.format(
-                    obj=_get_model_name(self),
+                    obj=_get_domain_name(self),
                     opr=operation,
                     **kwargs
                 )
@@ -167,7 +167,7 @@ class WithRequests(models.Model):
                 reverse(
                     fmt('admin:powerdns_{obj}request_add')
                 ) + '?{}={}'.format(
-                    _get_model_name(self),
+                    _get_domain_name(self),
                     self.pk
                 )
             )
@@ -435,7 +435,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         def result(self):
             def fmt(str_, **kwargs):
                 return str_.format(
-                    obj=_get_model_name(self),
+                    obj=_get_domain_name(self),
                     opr=operation,
                     **kwargs
                 )
@@ -468,7 +468,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
                 reverse(
                     fmt('admin:powerdns_{obj}request_add')
                 ) + '?{}={}'.format(
-                    _get_model_name(self),
+                    _get_domain_name(self),
                     self.pk
                 )
             )
@@ -665,7 +665,6 @@ rules.add_perm('powerdns.change_dnsaasrecord', rules.is_authenticated)
 rules.add_perm('powerdns.delete_dnsaasrecord', rules.is_authenticated)
 
 
-# TODO:: mv it to dnsaas app?
 class DNSaaSRecord(Record):
     """
     This model is the right model to operate on Records.
