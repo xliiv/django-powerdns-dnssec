@@ -22,6 +22,7 @@ from powerdns.tests.utils import (
     RecordRequestFactory,
     UserFactory
 )
+from powerdns.utils import AutoPtrOptions
 from dnsaas.api.v2.views import RecordViewSet
 from dnsaas.api.v2.serializers import RecordRequestSerializer
 
