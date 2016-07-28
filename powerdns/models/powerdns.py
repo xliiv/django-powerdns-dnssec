@@ -6,6 +6,7 @@ import time
 import rules
 from dj.choices.fields import ChoiceField
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
@@ -294,6 +295,14 @@ class Domain(TimeTrackable, Owned, WithRequests):
             )
         )
 
+    def as_empty_history(self):
+        """We don't care about domain history for now"""
+        return {}
+
+    def as_history_dump(self):
+        """We don't care about domain history for now"""
+        return {}
+
 
 rules.add_perm('powerdns', rules.is_authenticated)
 rules.add_perm('powerdns.add_domain', rules.is_superuser)
@@ -391,6 +400,11 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         _('Auto PTR record'),
         choices=AutoPtrOptions,
         default=AutoPtrOptions.ALWAYS,
+    )
+    delete_request = GenericRelation(
+        'DeleteRequest',
+        content_type_field='content_type',
+        object_id_field='target_id',
     )
 
     class Meta:
@@ -612,6 +626,27 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             )
         )
 
+    def as_empty_history(self):
+        return {
+            'content': '',
+            'name': '',
+            'owner': '',
+            'prio': '',
+            'remarks': '',
+            'ttl':  '',
+            'type':  '',
+        }
+
+    def as_history_dump(self):
+        return {
+            'content': self.content or '',
+            'name': self.name or '',
+            'owner': getattr(self.owner, 'username', ''),
+            'prio': self.prio or '',
+            'remarks': self.remarks or '',
+            'ttl':  self.ttl or '',
+            'type':  self.type or '',
+        }
 
 rules.add_perm('powerdns.add_record', rules.is_authenticated)
 rules.add_perm('powerdns.change_record', rules.is_authenticated)

@@ -19,6 +19,7 @@ from rest_framework.serializers import (
     ModelSerializer,
     SlugRelatedField,
 )
+from powerdns.models.requests import RequestStates
 from powerdns.models.tsigkeys import TsigKey
 
 
@@ -42,6 +43,7 @@ class DomainSerializer(OwnerSerializer):
 
 
 class RecordRequestSerializer(OwnerSerializer):
+    last_change = serializers.SerializerMethodField()
     target_owner = SlugRelatedField(
         slug_field='username',
         queryset=User.objects.all(),
@@ -51,6 +53,12 @@ class RecordRequestSerializer(OwnerSerializer):
 
     class Meta:
         model = RecordRequest
+
+    def get_last_change(self, obj):
+        if obj.state == RequestStates.OPEN:
+            return obj._get_json_history(obj.get_object())
+        else:
+            return obj.last_change_json
 
 
 class RecordSerializer(OwnerSerializer):
@@ -65,6 +73,24 @@ class RecordSerializer(OwnerSerializer):
     modified = serializers.DateTimeField(
         format='%Y-%m-%d %H:%M:%S', read_only=True
     )
+    change_request = serializers.SerializerMethodField(
+        'get_change_record_request'
+    )
+    delete_request = serializers.SerializerMethodField(
+        'get_delete_record_request'
+    )
+
+    def get_change_record_request(self, record):
+        record_request = record.requests.all()
+        if record_request:
+            return record_request[0].key
+        return None
+
+    def get_delete_record_request(self, record):
+        delete_request = record.delete_request.all()
+        if delete_request:
+            return delete_request[0].key
+        return None
 
     def validate(self, attrs):
         domain, content, record_type = (

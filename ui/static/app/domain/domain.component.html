@@ -8,7 +8,7 @@
     <div class="row">
       <div class="col-md-6">
         <div class="input-group">
-          <input
+          <input #searchInput
             type="text"
             class="form-control"
             placeholder="Search by name, owner"
@@ -31,6 +31,7 @@
       <thead>
          <tr>
             <th>Name</th>
+            <th>Type</th>
             <th>Owner</th>
          </tr>
       </thead>
@@ -38,6 +39,9 @@
         <tr *ngFor="let domain of domains" [highlight]>
             <td>
               {{ domain.name }}
+            </td>
+            <td>
+              {{ domain.type }}
             </td>
             <td>
               {{ domain.owner }}

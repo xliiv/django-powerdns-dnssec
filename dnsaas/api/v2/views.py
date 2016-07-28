@@ -4,7 +4,7 @@ import django_filters
 import logging
 
 from django.core.urlresolvers import reverse
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 
 from powerdns.models import (
     CryptoKey,
@@ -36,6 +36,7 @@ from .serializers import (
 )
 from powerdns.utils import to_reverse
 from powerdns.models.tsigkeys import TsigKey
+from powerdns.models.requests import RequestStates
 
 
 log = logging.getLogger(__name__)
@@ -108,6 +109,15 @@ class RecordViewSet(OwnerViewSet):
 
     queryset = Record.objects.all().select_related(
         'owner', 'domain'
+    ).prefetch_related(
+        Prefetch(
+            "requests",
+            queryset=RecordRequest.objects.filter(state=RequestStates.OPEN)
+        ),
+        Prefetch(
+            "delete_request",
+            queryset=DeleteRequest.objects.filter(state=RequestStates.OPEN)
+        )
     ).order_by('-id')
     serializer_class = RecordSerializer
     filter_backends = (filters.DjangoFilterBackend, filters.SearchFilter)
@@ -140,8 +150,10 @@ class RecordViewSet(OwnerViewSet):
             code = status.HTTP_201_CREATED
             headers = {}
         else:
-            data = {}
             record_request.save()
+            data = {
+                'record_request_id': record_request.id,
+            }
             code = status.HTTP_202_ACCEPTED
             headers = {
                 'Location': reverse(
@@ -193,10 +205,14 @@ class RecordViewSet(OwnerViewSet):
             instance.can_auto_accept(request.user)
         ):
             serializer.instance = record_request.accept()
+            data = serializer.data
             code = status.HTTP_200_OK
             headers = {}
         else:
             record_request.save()
+            data = {
+                'record_request_id': record_request.id,
+            }
             code = status.HTTP_202_ACCEPTED
             headers = {
                 'Location': reverse(
@@ -204,7 +220,7 @@ class RecordViewSet(OwnerViewSet):
                     kwargs={'pk': record_request.id},
                 )
             }
-        return Response(serializer.data, status=code, headers=headers)
+        return Response(data, status=code, headers=headers)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

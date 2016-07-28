@@ -1,19 +1,26 @@
-import { Component, OnInit } from "@angular/core";
+import { AfterViewInit, Component, OnInit, ViewChild } from "@angular/core";
 import { CanActivate, Router, RouteParams } from "@angular/router-deprecated";
 import { URLSearchParams, HTTP_PROVIDERS } from "@angular/http";
 import { AuthService, isLoggedin }  from "../auth/auth.service";
+import { ConfigService } from "../config.service";
 import { Record } from "./record";
 import { RecordService } from "./record.service";
 import { PaginationComponent } from "../pagination/pagination.component";
 import { SearchComponent } from "../search.component";
 import { HighlightDirective } from "../directives/highlight.directive";
+import { TooltipDirective } from "../tooltip.directive";
+import { FlashService } from "../flash/flash.service";
+import { FlashComponent } from "../flash/flash.component";
 import "rxjs/add/observable/throw";
 
+declare var $: any;
 
 @Component({
   templateUrl: "/static/app/record/record.component.html",
-  providers: [HTTP_PROVIDERS, RecordService],
-  directives: [PaginationComponent, HighlightDirective],
+  providers: [HTTP_PROVIDERS, RecordService, FlashService],
+  directives: [
+    FlashComponent, PaginationComponent, HighlightDirective, TooltipDirective
+  ],
   styles: [`
     .panel-heading {overflow:hidden;} td { font-size:13px; }
     .legend { float:left;padding-top:5px; }
@@ -31,7 +38,7 @@ import "rxjs/add/observable/throw";
   `]
 })
 @CanActivate(() => isLoggedin())
-export class RecordComponent extends SearchComponent implements OnInit {
+export class RecordComponent extends SearchComponent implements AfterViewInit, OnInit {
 
   records: Record[];
   errorMessage: any;
@@ -47,12 +54,15 @@ export class RecordComponent extends SearchComponent implements OnInit {
   };
   showResults: boolean = false;
   isAdmin: boolean = false;
+  jiraUrl: string = ConfigService.get("jiraUrl");
+  @ViewChild("searchInput") searchInput;
 
   constructor(
     private router: Router,
     private routeParams: RouteParams,
     private recordService: RecordService,
-    private authService: AuthService
+    private authService: AuthService,
+    private flashService: FlashService
   ) {
     super();
   }
@@ -66,7 +76,20 @@ export class RecordComponent extends SearchComponent implements OnInit {
     this.currentOffset = url_offset ? Number(url_offset) : 0;
     let search: string = this.routeParams.get("search");
     this.searchValue = (search !== null) ? search : "";
+
+    if (this.routeParams.get("showSaveRecordMessage") === "true") {
+      this.flashService.addMessage(["success", "Record has been saved."]);
+    } else if (this.routeParams.get("showAddRecordMessage") === "true") {
+      this.flashService.addMessage(["success", "Record has been added."]);
+    }
+
     this.getRecords();
+  }
+
+  ngAfterViewInit() {
+    $(this.searchInput.nativeElement).focus().get(0).setSelectionRange(
+      this.searchValue.length, this.searchValue.length
+    );
   }
 
   search(value: string) {
@@ -132,9 +155,10 @@ export class RecordComponent extends SearchComponent implements OnInit {
   }
 
   deleteConfirm(record: Record) {
-    if (confirm("Are you sure to delete this record: " + record.name)) {
+    if (confirm("Are you sure to delete this record: " + record.content)) {
       this.recordService.deleteRecord(record).subscribe((response) => {
         if (response.status === 204) {
+          this.flashService.addMessage(["success", `Record ${record.content } has been successfully removed.`]);
           this.getRecords();
         }
       });
