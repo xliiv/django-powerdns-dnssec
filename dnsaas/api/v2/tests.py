@@ -458,7 +458,6 @@ class TestRecords(BaseApiTestCase):
     def test_record_update_dumps_history_data_correctly(self):
         self.client.login(username='super_user', password='super_user')
         record = RecordFactory(
-            auto_ptr=AutoPtrOptions.NEVER.id,
             type='A',
             name='blog.com',
             content='192.168.1.0',
@@ -619,7 +618,6 @@ class TestRecords(BaseApiTestCase):
         self.client.login(username='super_user', password='super_user')
         record_request = RecordRequestFactory(
             state=RequestStates.OPEN.id,
-            record__auto_ptr=AutoPtrOptions.NEVER.id,
             record__type='A',
             record__name='blog.com',
             record__content='192.168.1.0',
