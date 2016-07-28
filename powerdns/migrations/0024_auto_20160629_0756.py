@@ -26,4 +26,12 @@ class Migration(migrations.Migration):
             old_name='record_auto_ptr',
             new_name='auto_ptr',
         ),
+        migrations.RemoveField(
+            model_name='record',
+            name='auto_ptr',
+        ),
+        migrations.RemoveField(
+            model_name='recordtemplate',
+            name='auto_ptr',
+        ),
     ]
