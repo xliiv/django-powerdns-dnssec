@@ -241,6 +241,13 @@ class Domain(TimeTrackable, Owned, WithRequests):
         verbose_name = _("domain")
         verbose_name_plural = _("domains")
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__original_values = {}
+        for field in self._meta.fields:
+            self.__original_values[field.name] = getattr(self, field.name)
+
+
     def __str__(self):
         return self.name
 
@@ -659,6 +666,7 @@ def update_serial(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Domain, dispatch_uid='domain_update_ptr')
 def update_ptr(sender, instance, **kwargs):
+    #TODO:: skip domains which auto_ptr field is not changed
     records = Record.objects.filter(domain=instance)
     for record in records:
         # recall signals on Record
