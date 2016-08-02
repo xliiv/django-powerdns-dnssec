@@ -580,7 +580,7 @@ class TestRecords(BaseApiTestCase):
         )
         record_request = RecordRequest.objects.get(record=response.data['id'])
 
-        self.assertEqual(record_request.owner, self.regular_user2)
+        self.assertEqual(record_request.owner, self.regular_user1)
         self.assertEqual(record_request.record.owner, self.regular_user2)
 
     #

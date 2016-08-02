@@ -234,11 +234,13 @@ JIRA_URL = ''
 
 NEW_UI_ENABLED = False
 
+# allow to set record's owner in api/v2/records
+ALLOW_RECORD_OWNER_SET = False
+
 if not TESTING:
     try:
         from settings_local import *  # noqa
     except ImportError:
         pass
 
-# allow to set record's owner in api/v2/records
-ALLOW_RECORD_OWNER_SET = False
+# ADDDING SETTINGS WHERE SHADOWS SETTINGS_LOCAL
