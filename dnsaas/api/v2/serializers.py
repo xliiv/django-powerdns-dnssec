@@ -81,15 +81,17 @@ class RecordSerializer(OwnerSerializer):
     )
 
     def get_change_record_request(self, record):
-        record_request = record.requests.all()
-        if record_request:
-            return record_request[0].key
+        if hasattr(record, 'requests'):
+            record_request = record.requests.all()
+            if record_request:
+                return record_request[0].key
         return None
 
     def get_delete_record_request(self, record):
-        delete_request = record.delete_request.all()
-        if delete_request:
-            return delete_request[0].key
+        if hasattr(record, 'requests'):
+            delete_request = record.delete_request.all()
+            if delete_request:
+                return delete_request[0].key
         return None
 
     def validate(self, attrs):

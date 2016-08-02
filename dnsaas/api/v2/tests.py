@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from django.contrib.auth import get_user_model
 from django.core.urlresolvers import reverse
 from django.http import QueryDict
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory
 
@@ -274,6 +274,25 @@ class TestRecords(BaseApiTestCase):
             '_request_type': 'create',
         })
 
+    @override_settings(ALLOW_RECORD_OWNER_SET=True)
+    def test_create_sets_owner_from_request_when_is_sent(self):
+        self.client.login(username='super_user', password='super_user')
+        domain = DomainFactory(name='example.com', owner=self.super_user)
+        data = {
+            'type': 'CNAME',
+            'domain': domain.id,
+            'name': 'www.example.com',
+            'content': 'example.com',
+            'owner': self.regular_user1.username,
+        }
+        response = self.client.post(
+            reverse('api:v2:record-list'), data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        record_request = RecordRequest.objects.get(record=response.data['id'])
+        self.assertEqual(record_request.owner, self.regular_user1)
+        self.assertEqual(record_request.record.owner, self.regular_user1)
+
     #
     # updates
     #
@@ -535,6 +554,34 @@ class TestRecords(BaseApiTestCase):
             'type': {'new': '', 'old': data['type']},
             '_request_type': 'update',
         })
+
+    @override_settings(ALLOW_RECORD_OWNER_SET=True)
+    def test_update_sets_owner_from_request_when_is_sent(self):
+        self.client.login(username='super_user', password='super_user')
+        record = RecordFactory(
+            auto_ptr=AutoPtrOptions.NEVER.id,
+            type='A',
+            name='blog.com',
+            content='192.168.1.0',
+            owner=self.regular_user1,
+        )
+        new_name = 'new-' + record.name
+
+        self.assertEqual(record.owner, self.regular_user1)
+
+        response = self.client.patch(
+            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            data={
+                'name': new_name,
+                'owner': self.regular_user2.username,
+            },
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        record_request = RecordRequest.objects.get(record=response.data['id'])
+
+        self.assertEqual(record_request.owner, self.regular_user2)
+        self.assertEqual(record_request.record.owner, self.regular_user2)
 
     #
     # deletion

@@ -3,6 +3,7 @@
 import django_filters
 import logging
 
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db.models import Prefetch, Q
 
@@ -131,6 +132,16 @@ class RecordViewSet(OwnerViewSet):
             data['owner'] = self.request.user.username
         return data
 
+    def _get_owner(self, record_serializer, request):
+        if (
+            settings.ALLOW_RECORD_OWNER_SET and
+            record_serializer.validated_data['owner']
+        ):
+            owner = record_serializer.validated_data['owner']
+        else:
+            owner = request.user
+        return owner
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
             data=self._set_owner(request.data.copy())
@@ -139,7 +150,7 @@ class RecordViewSet(OwnerViewSet):
 
         record_request = RecordRequest()
         record_request.copy_records_data(serializer.validated_data.items())
-        record_request.owner = request.user
+        record_request.owner = self._get_owner(serializer, request)
         record_request.target_owner = serializer.validated_data['owner']
 
         if serializer.validated_data['domain'].can_auto_accept(
@@ -196,7 +207,7 @@ class RecordViewSet(OwnerViewSet):
         ]
         record_request.copy_records_data(data_to_copy)
         record_request.domain = serializer.instance.domain
-        record_request.owner = request.user
+        record_request.owner = self._get_owner(serializer, request)
         record_request.target_owner = serializer.validated_data.get('owner')
         record_request.record = serializer.instance
 

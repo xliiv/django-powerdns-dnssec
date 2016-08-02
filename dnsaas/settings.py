@@ -239,3 +239,6 @@ if not TESTING:
         from settings_local import *  # noqa
     except ImportError:
         pass
+
+# allow to set record's owner in api/v2/records
+ALLOW_RECORD_OWNER_SET = False
