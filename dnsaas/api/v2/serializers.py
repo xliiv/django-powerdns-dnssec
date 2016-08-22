@@ -61,6 +61,19 @@ class RecordRequestSerializer(OwnerSerializer):
             return obj.last_change_json
 
 
+def hostname2domain(hostname):
+    domain = None
+    parts = hostname.split('.')
+    while parts:
+        try:
+            domain = Domain.objects.get(name='.'.join(parts))
+            break
+        except Domain.DoesNotExist:
+            pass
+        parts = parts[1:]
+    return domain
+
+
 class RecordSerializer(OwnerSerializer):
 
     class Meta:
@@ -69,6 +82,8 @@ class RecordSerializer(OwnerSerializer):
 
     domain = PrimaryKeyRelatedField(
         queryset=Domain.objects.all(),
+        required=False,
+        allow_null=True,
     )
     modified = serializers.DateTimeField(
         format='%Y-%m-%d %H:%M:%S', read_only=True
@@ -118,6 +133,22 @@ class RecordSerializer(OwnerSerializer):
                 raise serializers.ValidationError(
                     {'content': ['IP address cannot be private.']}
                 )
+
+        if not self.instance:
+            # get domain from name only for creation
+            if not domain and not attrs.get('name', None):
+                raise serializers.ValidationError(
+                    {'domain': ['Domain or name should be send']}
+                )
+            if not domain and attrs.get('name', None):
+                domain = hostname2domain(attrs['name'])
+                if not domain:
+                    raise serializers.ValidationError({
+                        'domain': [
+                            'No domain found for name {}'.format(attrs['name'])
+                        ]
+                    })
+                attrs['domain'] = domain
 
         return attrs
 
