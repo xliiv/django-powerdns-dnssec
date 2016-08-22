@@ -243,10 +243,9 @@ class Domain(TimeTrackable, Owned, WithRequests):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__original_values = {}
+        self._original_values = {}
         for field in self._meta.fields:
-            self.__original_values[field.name] = getattr(self, field.name)
-
+            self._original_values[field.name] = getattr(self, field.name)
 
     def __str__(self):
         return self.name
@@ -650,6 +649,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             'type':  self.type or '',
         }
 
+
 rules.add_perm('powerdns.add_record', rules.is_authenticated)
 rules.add_perm('powerdns.change_record', rules.is_authenticated)
 rules.add_perm('powerdns.delete_record', rules.is_authenticated)
@@ -664,13 +664,18 @@ def update_serial(sender, instance, **kwargs):
         soa.save()
 
 
-@receiver(post_save, sender=Domain, dispatch_uid='domain_update_ptr')
-def update_ptr(sender, instance, **kwargs):
-    #TODO:: skip domains which auto_ptr field is not changed
-    records = Record.objects.filter(domain=instance)
+def _update_records_ptrs(domain):
+    records = Record.objects.filter(domain=domain)
     for record in records:
         # recall signals on Record
         record.save(force_update=True)
+
+
+@receiver(post_save, sender=Domain, dispatch_uid='domain_update_ptr')
+def update_ptr(sender, instance, **kwargs):
+    if instance._original_values['auto_ptr'] == instance.auto_ptr:
+        return
+    _update_records_ptrs(instance)
 
 
 @receiver(post_save, sender=Record, dispatch_uid='record_create_ptr')
