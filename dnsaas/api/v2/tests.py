@@ -822,7 +822,6 @@ class TestDomainSelecting(BaseApiTestCase):
             domain.id,
         )
 
-
     def test_raise_error_when_domain_cant_be_found(self):
         self.data['name'] = 'unknown-domain.com'
         response = self.client.post(
