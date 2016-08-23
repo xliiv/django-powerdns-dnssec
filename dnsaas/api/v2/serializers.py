@@ -62,6 +62,14 @@ class RecordRequestSerializer(OwnerSerializer):
 
 
 def hostname2domain(hostname):
+    """
+    Find longest existing domain within `hostname` or None
+
+    Example:
+        hostname = sub-domain.on.existing-domain.com
+        and only existing-domain.com exists
+    Then it returns `existing-domain.com` as db object.
+    """
     domain = None
     parts = hostname.split('.')
     while parts:
@@ -136,16 +144,14 @@ class RecordSerializer(OwnerSerializer):
 
         if not self.instance:
             # get domain from name only for creation
-            if not domain and not attrs.get('name', None):
-                raise serializers.ValidationError(
-                    {'domain': ['Domain or name should be send']}
-                )
-            if not domain and attrs.get('name', None):
+            if not domain:
                 domain = hostname2domain(attrs['name'])
                 if not domain:
                     raise serializers.ValidationError({
                         'domain': [
-                            'No domain found for name {}'.format(attrs['name'])
+                            'No domain found for name {}'.format(
+                                attrs['name']
+                            )
                         ]
                     })
                 attrs['domain'] = domain
