@@ -665,10 +665,9 @@ def update_serial(sender, instance, **kwargs):
 
 
 def _update_records_ptrs(domain):
-    records = Record.objects.filter(domain=domain)
+    records = Record.objects.filter(domain=domain, type='A')
     for record in records:
-        # recall signals on Record
-        record.save(force_update=True)
+        _create_ptr(record)
 
 
 @receiver(post_save, sender=Domain, dispatch_uid='domain_update_ptr')
@@ -678,15 +677,19 @@ def update_ptr(sender, instance, **kwargs):
     _update_records_ptrs(instance)
 
 
+def _create_ptr(record):
+    if (
+        record.domain.auto_ptr == AutoPtrOptions.NEVER or
+        record.type != 'A'
+    ):
+        record.delete_ptr()
+        return
+    record.create_ptr()
+
+
 @receiver(post_save, sender=Record, dispatch_uid='record_create_ptr')
 def create_ptr(sender, instance, **kwargs):
-    if (
-        instance.domain.auto_ptr == AutoPtrOptions.NEVER or
-        instance.type != 'A'
-    ):
-        instance.delete_ptr()
-        return
-    instance.create_ptr()
+    _create_ptr(instance)
 
 
 class SuperMaster(TimeTrackable):
