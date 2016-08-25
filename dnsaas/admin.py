@@ -1,3 +1,4 @@
+from django_extensions.admin import ForeignKeyAutocompleteAdmin
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
 from django.forms import (
@@ -6,6 +7,10 @@ from django.forms import (
     ModelForm,
     ValidationError,
     ModelChoiceField,
+)
+from powerdns.models.templates import (
+    DomainTemplate,
+    RecordTemplate,
 )
 
 from powerdns.models.powerdns import (
@@ -155,11 +160,23 @@ class RecordAdmin(admin.ModelAdmin):
     #    form.user = request.user
     #    return form
 
+RECORD_LIST_FIELDS = (
+    'name',
+    'type',
+    'content',
+    'ttl',
+    'prio',
+)
+class RecordTemplateAdmin(ForeignKeyAutocompleteAdmin):
+    form = RecordAdminForm
+    list_display = RECORD_LIST_FIELDS
+
 
 
 #TODO:: restrict all only for superuser
 admin_site2.register(Domain, DomainAdmin)
 admin_site2.register(Record, RecordAdmin)
+admin_site2.register(RecordTemplate, RecordTemplateAdmin)
 admin_site2.register(TsigKey)
 
 
@@ -174,7 +191,6 @@ admin_site2.register(TsigKey)
 #from django.contrib.contenttypes.models import ContentType
 #from django.db import models
 #from django.utils.translation import ugettext_lazy as _
-#from django_extensions.admin import ForeignKeyAutocompleteAdmin
 #from powerdns.models.powerdns import (
 #    CryptoKey,
 #    Domain,
@@ -188,10 +204,6 @@ admin_site2.register(TsigKey)
 #
 #
 #from powerdns.models.powerdns import can_delete, can_edit
-#from powerdns.models.templates import (
-#    DomainTemplate,
-#    RecordTemplate,
-#)
 #from powerdns.models.requests import (
 #    DeleteRequest,
 #    DomainRequest,
@@ -300,18 +312,6 @@ admin_site2.register(TsigKey)
 #    inlines = [RecordTemplateInline]
 #    list_display = ['name', 'add_domain_link', 'is_public_domain']
 #
-#RECORD_LIST_FIELDS = (
-#    'name',
-#    'type',
-#    'content',
-#    'ttl',
-#    'prio',
-#)
-#
-#
-#class RecordTemplateAdmin(ForeignKeyAutocompleteAdmin):
-#    form = RecordAdminForm
-#    list_display = RECORD_LIST_FIELDS
 #
 #
 #
@@ -319,7 +319,6 @@ admin_site2.register(TsigKey)
 #admin.site.register(DomainMetadata, DomainMetadataAdmin)
 #admin.site.register(CryptoKey, CryptoKeyAdmin)
 #admin.site.register(DomainTemplate, DomainTemplateAdmin)
-#admin.site.register(RecordTemplate, RecordTemplateAdmin)
 
 # SKIPPED
 #admin.site.register(Authorisation, AuthorisationAdmin)
