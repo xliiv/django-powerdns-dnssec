@@ -14,6 +14,9 @@ from powerdns.views import (
 )
 from ui.views import start_page
 
+from dnsaas.admin import admin_site2
+
+
 title = settings.SITE_TITLE
 title_v = ' '.join([title, VERSION])
 
@@ -24,39 +27,9 @@ admin.site.site_header = title_v
 admin.autodiscover()
 
 
-
-
-
-
-
-
-from django.contrib.admin.sites import AdminSite
-#class MyAdminSite(AdminSite):
-#    @property
-#    def urls(self):
-#        #return self.get_urls(), 'admin', self.name
-#        return self.get_urls(), 'admin2', 'admin2'
-#admin_site2 = MyAdminSite()
-admin_site2 = AdminSite('admin2')
-
-from powerdns.models.powerdns import Record
-admin_site2.register(Record)
-
-
-
-
-
-
-
 urlpatterns = patterns(
     '',
-
-
-
     url(r'^admin2/', include(admin_site2.urls)),
-
-
-
     url(r'^admin/', include(admin.site.urls)),
     url(r'^api/', include('dnsaas.api.urls', namespace='api')),
     url(r'^api-token-auth/', obtain_auth_token, name='get-api-token'),
@@ -78,8 +51,6 @@ urlpatterns = patterns(
         name='accept_delete'
     ),
 )
-
-
 
 
 if settings.NEW_UI_ENABLED:
