@@ -1,5 +1,12 @@
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
+from django.forms import (
+    HiddenInput,
+    NullBooleanSelect,
+    ModelForm,
+    ValidationError,
+    ModelChoiceField,
+)
 
 from powerdns.models.powerdns import (
     CryptoKey,
@@ -8,11 +15,95 @@ from powerdns.models.powerdns import (
     Record,
     SuperMaster,
 )
+from powerdns.models.tsigkeys import TsigKey
+from powerdns.utils import Owned, DomainForRecordValidator, is_owner
 
 
 admin_site2 = AdminSite('admin2')
 
+
+
+
+from django.utils.translation import ugettext_lazy as _
+from django.db import models
+try:
+    from django.contrib.admin import SimpleListFilter
+except ImportError:
+    _domain_filters = ('type', 'last_check', 'account',)
+else:
+    class ReverseDomainListFilter(SimpleListFilter):
+        title = _('domain class')
+
+        # Parameter for the filter that will be used in the URL query.
+        parameter_name = 'domain_class'
+
+        def lookups(self, request, model_admin):
+            return (
+                ('fwd', _('domain:forward')),
+                ('rev', _('domain:reverse')),
+            )
+
+        def queryset(self, request, queryset):
+            q = (models.Q(name__endswith='.in-addr.arpa') |
+                 models.Q(name__endswith='.ip6.arpa'))
+            if self.value() == 'fwd':
+                return queryset.exclude(q)
+            if self.value() == 'rev':
+                return queryset.filter(q)
+    _domain_filters = (
+        ReverseDomainListFilter, 'type', 'last_check', 'account',
+    )
+
+
+class DomainMetadataInline(admin.TabularInline):
+    model = DomainMetadata
+    extra = 0
+
+
+class DomainAdmin(admin.ModelAdmin):
+    inlines = [DomainMetadataInline]
+    list_display = (
+        'name',
+        'type',
+        'last_check',
+        'account',
+        'add_record_link',
+        'request_change',
+        'request_deletion'
+    )
+    list_display_links = None
+    list_filter = _domain_filters + ('created', 'modified')
+    list_per_page = 250
+    save_on_top = True
+    search_fields = ('name',)
+    radio_fields = {'type': admin.HORIZONTAL}
+    readonly_fields = ('notified_serial', 'created', 'modified')
+    #FromModel = DomainTemplate
+    #CopyFieldsModel = DomainTemplate
+    #from_field = 'template'
+
+
+class RecordAdminForm(ModelForm):
+
+    def clean_type(self):
+        type = self.cleaned_data['type']
+        if not type:
+            raise ValidationError(_("Record type is required"))
+        return type
+
+    def clean_domain(self):
+        if (
+            self.instance.pk and
+            self.instance.domain == self.cleaned_data['domain']
+        ):
+            # Domain unchanged. Maybe user was assigned the record in a domain
+            # She doesn't own.
+            return self.cleaned_data['domain']
+        validator = DomainForRecordValidator()
+        validator.user = self.user
+        return validator(self.cleaned_data['domain'])
 class RecordAdmin(admin.ModelAdmin):
+    form = RecordAdminForm
     list_display = (
         'name',
         'type',
@@ -66,7 +157,10 @@ class RecordAdmin(admin.ModelAdmin):
 
 
 
+#TODO:: restrict all only for superuser
+admin_site2.register(Domain, DomainAdmin)
 admin_site2.register(Record, RecordAdmin)
+admin_site2.register(TsigKey)
 
 
 
@@ -79,13 +173,6 @@ admin_site2.register(Record, RecordAdmin)
 #from django.contrib.admin.widgets import AdminRadioSelect
 #from django.contrib.contenttypes.models import ContentType
 #from django.db import models
-#from django.forms import (
-#    HiddenInput,
-#    NullBooleanSelect,
-#    ModelForm,
-#    ValidationError,
-#    ModelChoiceField,
-#)
 #from django.utils.translation import ugettext_lazy as _
 #from django_extensions.admin import ForeignKeyAutocompleteAdmin
 #from powerdns.models.powerdns import (
@@ -110,62 +197,14 @@ admin_site2.register(Record, RecordAdmin)
 #    DomainRequest,
 #    RecordRequest,
 #)
-#from powerdns.utils import Owned, DomainForRecordValidator, is_owner
-#from powerdns.models.tsigkeys import TsigKey
 #
 #
 #class NullBooleanRadioSelect(NullBooleanSelect, AdminRadioSelect):
 #    pass
 #
 #
-#try:
-#    from django.contrib.admin import SimpleListFilter
-#except ImportError:
-#    _domain_filters = ('type', 'last_check', 'account',)
-#else:
-#    class ReverseDomainListFilter(SimpleListFilter):
-#        title = _('domain class')
-#
-#        # Parameter for the filter that will be used in the URL query.
-#        parameter_name = 'domain_class'
-#
-#        def lookups(self, request, model_admin):
-#            return (
-#                ('fwd', _('domain:forward')),
-#                ('rev', _('domain:reverse')),
-#            )
-#
-#        def queryset(self, request, queryset):
-#            q = (models.Q(name__endswith='.in-addr.arpa') |
-#                 models.Q(name__endswith='.ip6.arpa'))
-#            if self.value() == 'fwd':
-#                return queryset.exclude(q)
-#            if self.value() == 'rev':
-#                return queryset.filter(q)
-#    _domain_filters = (
-#        ReverseDomainListFilter, 'type', 'last_check', 'account',
-#    )
 #
 #
-#class RecordAdminForm(ModelForm):
-#
-#    def clean_type(self):
-#        type = self.cleaned_data['type']
-#        if not type:
-#            raise ValidationError(_("Record type is required"))
-#        return type
-#
-#    def clean_domain(self):
-#        if (
-#            self.instance.pk and
-#            self.instance.domain == self.cleaned_data['domain']
-#        ):
-#            # Domain unchanged. Maybe user was assigned the record in a domain
-#            # She doesn't own.
-#            return self.cleaned_data['domain']
-#        validator = DomainForRecordValidator()
-#        validator.user = self.user
-#        return validator(self.cleaned_data['domain'])
 #
 #
 #class CopyingAdmin(admin.ModelAdmin):
@@ -211,34 +250,6 @@ admin_site2.register(Record, RecordAdmin)
 #        if not issubclass(model, Owned) or rules.is_superuser(user):
 #            return super(OwnedAdmin, self).get_related_filter(model, request)
 #        return models.Q(owner=user)
-#
-#
-#class DomainMetadataInline(admin.TabularInline):
-#    model = DomainMetadata
-#    extra = 0
-#
-#
-#class DomainAdmin(OwnedAdmin, CopyingAdmin):
-#    inlines = [DomainMetadataInline]
-#    list_display = (
-#        'name',
-#        'type',
-#        'last_check',
-#        'account',
-#        'add_record_link',
-#        'request_change',
-#        'request_deletion'
-#    )
-#    list_display_links = None
-#    list_filter = _domain_filters + ('created', 'modified')
-#    list_per_page = 250
-#    save_on_top = True
-#    search_fields = ('name',)
-#    radio_fields = {'type': admin.HORIZONTAL}
-#    readonly_fields = ('notified_serial', 'created', 'modified')
-#    FromModel = DomainTemplate
-#    CopyFieldsModel = DomainTemplate
-#    from_field = 'template'
 #
 #
 #class SuperMasterAdmin(admin.ModelAdmin):
@@ -303,6 +314,18 @@ admin_site2.register(Record, RecordAdmin)
 #    list_display = RECORD_LIST_FIELDS
 #
 #
+#
+#admin.site.register(SuperMaster, SuperMasterAdmin)
+#admin.site.register(DomainMetadata, DomainMetadataAdmin)
+#admin.site.register(CryptoKey, CryptoKeyAdmin)
+#admin.site.register(DomainTemplate, DomainTemplateAdmin)
+#admin.site.register(RecordTemplate, RecordTemplateAdmin)
+
+# SKIPPED
+#admin.site.register(Authorisation, AuthorisationAdmin)
+#admin.site.register(DomainRequest, DomainRequestAdmin)
+#admin.site.register(RecordRequest, RecordRequestAdmin)
+#admin.site.register(DeleteRequest, DeleteRequestAdmin)
 #class DomainRequestForm(autocomplete_light.forms.ModelForm):
 #    class Meta:
 #        exclude = ['owner', 'state']
@@ -399,16 +422,3 @@ admin_site2.register(Record, RecordAdmin)
 #        if self.from_object:
 #            form.base_fields['domain'].initial = self.from_object.domain
 #        return form
-#
-#admin.site.register(Domain, DomainAdmin)
-#admin.site.register(Record, RecordAdmin)
-#admin.site.register(SuperMaster, SuperMasterAdmin)
-#admin.site.register(DomainMetadata, DomainMetadataAdmin)
-#admin.site.register(CryptoKey, CryptoKeyAdmin)
-#admin.site.register(DomainTemplate, DomainTemplateAdmin)
-#admin.site.register(RecordTemplate, RecordTemplateAdmin)
-#admin.site.register(Authorisation, AuthorisationAdmin)
-#admin.site.register(DomainRequest, DomainRequestAdmin)
-#admin.site.register(RecordRequest, RecordRequestAdmin)
-#admin.site.register(DeleteRequest, DeleteRequestAdmin)
-#admin.site.register(TsigKey)
