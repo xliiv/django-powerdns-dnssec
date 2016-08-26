@@ -256,6 +256,7 @@ admin_site2.register(DomainTemplate, DomainTemplateAdmin)
 
 
 
+# SKIPPED
 #import autocomplete_light
 #import rules
 #from django.contrib.auth import get_user_model
@@ -303,11 +304,57 @@ admin_site2.register(DomainTemplate, DomainTemplateAdmin)
 #
 #
 
-# SKIPPED
 #admin.site.register(Authorisation, AuthorisationAdmin)
 #admin.site.register(DomainRequest, DomainRequestAdmin)
 #admin.site.register(RecordRequest, RecordRequestAdmin)
 #admin.site.register(DeleteRequest, DeleteRequestAdmin)
+#import autocomplete_light
+#import rules
+#from django.contrib.auth import get_user_model
+#from django.contrib import admin
+#from django.contrib.contenttypes.models import ContentType
+#from django.db import models
+#from django.utils.translation import ugettext_lazy as _
+#from powerdns.models.authorisations import Authorisation
+#from threadlocals.threadlocals import get_current_user
+#
+#
+#from powerdns.models.powerdns import can_delete, can_edit
+#from powerdns.models.requests import (
+#    DeleteRequest,
+#    DomainRequest,
+#    RecordRequest,
+#)
+#
+#class CopyingAdmin(admin.ModelAdmin):
+#
+#    field_prefix = ''
+#    target_prefix = ''
+#
+#    def get_form(self, request, obj=None, **kwargs):
+#        form = super().get_form(request, obj, **kwargs)
+#        from_pk = request.GET.get(self.from_field)
+#        if from_pk is not None:
+#            self.from_object = self.FromModel.objects.get(pk=from_pk)
+#            for field in self.CopyFieldsModel.copy_fields:
+#                form.base_fields[field[len(self.field_prefix):]].initial = \
+#                    getattr(self.from_object, field[len(self.target_prefix):])
+#        else:
+#            self.from_object = None
+#        return form
+#
+#
+#class RequestAdmin(CopyingAdmin):
+#    """Admin for domain/record requests"""
+#
+#    def get_form(self, *args, **kwargs):
+#        form = super().get_form(*args, **kwargs)
+#        form.base_fields['target_owner'].initial =\
+#            form.base_fields['target_owner'].initial or get_current_user()
+#        return form
+#
+#
+
 #class DomainRequestForm(autocomplete_light.forms.ModelForm):
 #    class Meta:
 #        exclude = ['owner', 'state']
