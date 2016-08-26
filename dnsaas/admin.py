@@ -27,6 +27,25 @@ from powerdns.utils import Owned, DomainForRecordValidator, is_owner
 admin_site2 = AdminSite('admin2')
 
 
+#TODO: is this really needed?
+class CopyingAdmin(admin.ModelAdmin):
+
+    field_prefix = ''
+    target_prefix = ''
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        from_pk = request.GET.get(self.from_field)
+        if from_pk is not None:
+            self.from_object = self.FromModel.objects.get(pk=from_pk)
+            for field in self.CopyFieldsModel.copy_fields:
+                form.base_fields[field[len(self.field_prefix):]].initial = \
+                    getattr(self.from_object, field[len(self.target_prefix):])
+        else:
+            self.from_object = None
+        return form
+
+
 from rules.contrib.admin import ObjectPermissionsModelAdmin
 class OwnedAdmin(ForeignKeyAutocompleteAdmin, ObjectPermissionsModelAdmin):
     """Admin for models with owner field"""
@@ -85,7 +104,7 @@ class DomainMetadataInline(admin.TabularInline):
     extra = 0
 
 
-class DomainAdmin(OwnedAdmin, admin.ModelAdmin):
+class DomainAdmin(OwnedAdmin, CopyingAdmin):
     inlines = [DomainMetadataInline]
     list_display = (
         'name',
@@ -103,9 +122,10 @@ class DomainAdmin(OwnedAdmin, admin.ModelAdmin):
     search_fields = ('name',)
     radio_fields = {'type': admin.HORIZONTAL}
     readonly_fields = ('notified_serial', 'created', 'modified')
-    #FromModel = DomainTemplate
-    #CopyFieldsModel = DomainTemplate
-    #from_field = 'template'
+    # CopyingAdmin
+    FromModel = DomainTemplate
+    CopyFieldsModel = DomainTemplate
+    from_field = 'template'
 
 
 class RecordAdminForm(ModelForm):
@@ -127,7 +147,10 @@ class RecordAdminForm(ModelForm):
         validator = DomainForRecordValidator()
         validator.user = self.user
         return validator(self.cleaned_data['domain'])
-class RecordAdmin(OwnedAdmin, admin.ModelAdmin):
+from django.contrib.admin.widgets import AdminRadioSelect
+class NullBooleanRadioSelect(NullBooleanSelect, AdminRadioSelect):
+    pass
+class RecordAdmin(OwnedAdmin, CopyingAdmin):
     form = RecordAdminForm
     list_display = (
         'name',
@@ -163,22 +186,23 @@ class RecordAdmin(OwnedAdmin, admin.ModelAdmin):
         }),
         (None, {'fields': ('created', 'modified')})
     )
-    #formfield_overrides = {
-    #    models.NullBooleanField: {
-    #        'widget': NullBooleanRadioSelect(
-    #            attrs={'class': 'radiolist inline'}
-    #        ),
-    #    },
-    #}
-    #FromModel = Domain
-    #CopyFieldsModel = Domain
-    #from_field = 'domain'
-    #field_prefix = 'record_'
+    formfield_overrides = {
+        models.NullBooleanField: {
+            'widget': NullBooleanRadioSelect(
+                attrs={'class': 'radiolist inline'}
+            ),
+        },
+    }
+    # CopyingAdmin
+    FromModel = Domain
+    CopyFieldsModel = Domain
+    from_field = 'domain'
+    field_prefix = 'record_'
 
-    #def get_form(self, request, *args, **kwargs):
-    #    form = super().get_form(request, *args, **kwargs)
-    #    form.user = request.user
-    #    return form
+    def get_form(self, request, *args, **kwargs):
+        form = super().get_form(request, *args, **kwargs)
+        form.user = request.user
+        return form
 
 RECORD_LIST_FIELDS = (
     'name',
@@ -211,9 +235,6 @@ class DomainMetadataAdmin(ForeignKeyAutocompleteAdmin):
     save_on_top = True
     search_fields = ('content',)
 
-from django.contrib.admin.widgets import AdminRadioSelect
-class NullBooleanRadioSelect(NullBooleanSelect, AdminRadioSelect):
-    pass
 class CryptoKeyAdmin(ForeignKeyAutocompleteAdmin):
     list_display = ('domain', 'flags', 'active', 'content',)
     list_filter = ('active', 'domain', 'created', 'modified')
@@ -275,35 +296,6 @@ admin_site2.register(DomainTemplate, DomainTemplateAdmin)
 #    RecordRequest,
 #)
 #
-#class CopyingAdmin(admin.ModelAdmin):
-#
-#    field_prefix = ''
-#    target_prefix = ''
-#
-#    def get_form(self, request, obj=None, **kwargs):
-#        form = super().get_form(request, obj, **kwargs)
-#        from_pk = request.GET.get(self.from_field)
-#        if from_pk is not None:
-#            self.from_object = self.FromModel.objects.get(pk=from_pk)
-#            for field in self.CopyFieldsModel.copy_fields:
-#                form.base_fields[field[len(self.field_prefix):]].initial = \
-#                    getattr(self.from_object, field[len(self.target_prefix):])
-#        else:
-#            self.from_object = None
-#        return form
-#
-#
-#class RequestAdmin(CopyingAdmin):
-#    """Admin for domain/record requests"""
-#
-#    def get_form(self, *args, **kwargs):
-#        form = super().get_form(*args, **kwargs)
-#        form.base_fields['target_owner'].initial =\
-#            form.base_fields['target_owner'].initial or get_current_user()
-#        return form
-#
-#
-
 #admin.site.register(Authorisation, AuthorisationAdmin)
 #admin.site.register(DomainRequest, DomainRequestAdmin)
 #admin.site.register(RecordRequest, RecordRequestAdmin)
@@ -325,24 +317,6 @@ admin_site2.register(DomainTemplate, DomainTemplateAdmin)
 #    DomainRequest,
 #    RecordRequest,
 #)
-#
-#class CopyingAdmin(admin.ModelAdmin):
-#
-#    field_prefix = ''
-#    target_prefix = ''
-#
-#    def get_form(self, request, obj=None, **kwargs):
-#        form = super().get_form(request, obj, **kwargs)
-#        from_pk = request.GET.get(self.from_field)
-#        if from_pk is not None:
-#            self.from_object = self.FromModel.objects.get(pk=from_pk)
-#            for field in self.CopyFieldsModel.copy_fields:
-#                form.base_fields[field[len(self.field_prefix):]].initial = \
-#                    getattr(self.from_object, field[len(self.target_prefix):])
-#        else:
-#            self.from_object = None
-#        return form
-#
 #
 #class RequestAdmin(CopyingAdmin):
 #    """Admin for domain/record requests"""

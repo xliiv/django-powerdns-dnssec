@@ -100,9 +100,13 @@ class CopyingAdmin(admin.ModelAdmin):
     target_prefix = ''
 
     def get_form(self, request, obj=None, **kwargs):
+        import pudb
+        pudb.set_trace()
         form = super().get_form(request, obj, **kwargs)
         from_pk = request.GET.get(self.from_field)
         if from_pk is not None:
+            import pudb
+            pudb.set_trace()
             self.from_object = self.FromModel.objects.get(pk=from_pk)
             for field in self.CopyFieldsModel.copy_fields:
                 form.base_fields[field[len(self.field_prefix):]].initial = \
