@@ -27,6 +27,26 @@ from powerdns.utils import Owned, DomainForRecordValidator, is_owner
 admin_site2 = AdminSite('admin2')
 
 
+from rules.contrib.admin import ObjectPermissionsModelAdmin
+class OwnedAdmin(ForeignKeyAutocompleteAdmin, ObjectPermissionsModelAdmin):
+    """Admin for models with owner field"""
+
+    def save_model(self, request, object_, form, change):
+        if object_.owner is None:
+            object_.owner = request.user
+        #TODO: rm it?
+        #object_.email_owner(request.user)
+        super(OwnedAdmin, self).save_model(request, object_, form, change)
+
+    #def get_related_filter(self, model, request):
+    #    #TODO:: i assume this fn is up to remove
+    #    return super(OwnedAdmin, self).get_related_filter(model, request)
+    #    user = request.user
+    #    if not issubclass(model, Owned) or rules.is_superuser(user):
+    #        return super(OwnedAdmin, self).get_related_filter(model, request)
+    #    return models.Q(owner=user)
+
+
 
 
 from django.utils.translation import ugettext_lazy as _
@@ -65,7 +85,7 @@ class DomainMetadataInline(admin.TabularInline):
     extra = 0
 
 
-class DomainAdmin(admin.ModelAdmin):
+class DomainAdmin(OwnedAdmin, admin.ModelAdmin):
     inlines = [DomainMetadataInline]
     list_display = (
         'name',
@@ -107,7 +127,7 @@ class RecordAdminForm(ModelForm):
         validator = DomainForRecordValidator()
         validator.user = self.user
         return validator(self.cleaned_data['domain'])
-class RecordAdmin(admin.ModelAdmin):
+class RecordAdmin(OwnedAdmin, admin.ModelAdmin):
     form = RecordAdminForm
     list_display = (
         'name',
@@ -172,13 +192,66 @@ class RecordTemplateAdmin(ForeignKeyAutocompleteAdmin):
     list_display = RECORD_LIST_FIELDS
 
 
+class SuperMasterAdmin(admin.ModelAdmin):
+    list_display = ('ip', 'nameserver', 'account',)
+    list_filter = ('ip', 'account', 'created', 'modified')
+    search_fields = ('ip', 'nameserver',)
+    readonly_fields = ('created', 'modified')
+
+
+class DomainMetadataAdmin(ForeignKeyAutocompleteAdmin):
+    list_display = ('domain', 'kind', 'content',)
+    list_filter = ('kind', 'domain', 'created', 'modified')
+    list_per_page = 250
+    list_filter = ('created', 'modified')
+    readonly_fields = ('created', 'modified')
+    related_search_fields = {
+        'domain': ('name',),
+    }
+    save_on_top = True
+    search_fields = ('content',)
+
+from django.contrib.admin.widgets import AdminRadioSelect
+class NullBooleanRadioSelect(NullBooleanSelect, AdminRadioSelect):
+    pass
+class CryptoKeyAdmin(ForeignKeyAutocompleteAdmin):
+    list_display = ('domain', 'flags', 'active', 'content',)
+    list_filter = ('active', 'domain', 'created', 'modified')
+    list_per_page = 250
+    readonly_fields = ('created', 'modified')
+    related_search_fields = {
+        'domain': ('name',),
+    }
+    save_on_top = True
+    search_fields = ('content',)
+    formfield_overrides = {
+        models.NullBooleanField: {
+            'widget': NullBooleanRadioSelect(
+                attrs={'class': 'radiolist inline'}
+            ),
+        },
+    }
+
+class RecordTemplateInline(admin.StackedInline):
+    model = RecordTemplate
+    extra = 1
+class DomainTemplateAdmin(ForeignKeyAutocompleteAdmin):
+    inlines = [RecordTemplateInline]
+    list_display = ['name', 'add_domain_link', 'is_public_domain']
+
+
+
+
 
 #TODO:: restrict all only for superuser
 admin_site2.register(Domain, DomainAdmin)
 admin_site2.register(Record, RecordAdmin)
 admin_site2.register(RecordTemplate, RecordTemplateAdmin)
+admin_site2.register(SuperMaster, SuperMasterAdmin)
+admin_site2.register(DomainMetadata, DomainMetadataAdmin)
+admin_site2.register(CryptoKey, CryptoKeyAdmin)
 admin_site2.register(TsigKey)
-
+admin_site2.register(DomainTemplate, DomainTemplateAdmin)
 
 
 
@@ -187,19 +260,10 @@ admin_site2.register(TsigKey)
 #import rules
 #from django.contrib.auth import get_user_model
 #from django.contrib import admin
-#from django.contrib.admin.widgets import AdminRadioSelect
 #from django.contrib.contenttypes.models import ContentType
 #from django.db import models
 #from django.utils.translation import ugettext_lazy as _
-#from powerdns.models.powerdns import (
-#    CryptoKey,
-#    Domain,
-#    DomainMetadata,
-#    Record,
-#    SuperMaster,
-#)
 #from powerdns.models.authorisations import Authorisation
-#from rules.contrib.admin import ObjectPermissionsModelAdmin
 #from threadlocals.threadlocals import get_current_user
 #
 #
@@ -209,15 +273,6 @@ admin_site2.register(TsigKey)
 #    DomainRequest,
 #    RecordRequest,
 #)
-#
-#
-#class NullBooleanRadioSelect(NullBooleanSelect, AdminRadioSelect):
-#    pass
-#
-#
-#
-#
-#
 #
 #class CopyingAdmin(admin.ModelAdmin):
 #
@@ -247,78 +302,6 @@ admin_site2.register(TsigKey)
 #        return form
 #
 #
-#class OwnedAdmin(ForeignKeyAutocompleteAdmin, ObjectPermissionsModelAdmin):
-#    """Admin for models with owner field"""
-#
-#    def save_model(self, request, object_, form, change):
-#        if object_.owner is None:
-#            object_.owner = request.user
-#        object_.email_owner(request.user)
-#        super(OwnedAdmin, self).save_model(request, object_, form, change)
-#
-#    def get_related_filter(self, model, request):
-#        return super(OwnedAdmin, self).get_related_filter(model, request)
-#        user = request.user
-#        if not issubclass(model, Owned) or rules.is_superuser(user):
-#            return super(OwnedAdmin, self).get_related_filter(model, request)
-#        return models.Q(owner=user)
-#
-#
-#class SuperMasterAdmin(admin.ModelAdmin):
-#    list_display = ('ip', 'nameserver', 'account',)
-#    list_filter = ('ip', 'account', 'created', 'modified')
-#    search_fields = ('ip', 'nameserver',)
-#    readonly_fields = ('created', 'modified')
-#
-#
-#class DomainMetadataAdmin(ForeignKeyAutocompleteAdmin):
-#    list_display = ('domain', 'kind', 'content',)
-#    list_filter = ('kind', 'domain', 'created', 'modified')
-#    list_per_page = 250
-#    list_filter = ('created', 'modified')
-#    readonly_fields = ('created', 'modified')
-#    related_search_fields = {
-#        'domain': ('name',),
-#    }
-#    save_on_top = True
-#    search_fields = ('content',)
-#
-#
-#class CryptoKeyAdmin(ForeignKeyAutocompleteAdmin):
-#    list_display = ('domain', 'flags', 'active', 'content',)
-#    list_filter = ('active', 'domain', 'created', 'modified')
-#    list_per_page = 250
-#    readonly_fields = ('created', 'modified')
-#    related_search_fields = {
-#        'domain': ('name',),
-#    }
-#    save_on_top = True
-#    search_fields = ('content',)
-#    formfield_overrides = {
-#        models.NullBooleanField: {
-#            'widget': NullBooleanRadioSelect(
-#                attrs={'class': 'radiolist inline'}
-#            ),
-#        },
-#    }
-#
-#
-#class RecordTemplateInline(admin.StackedInline):
-#    model = RecordTemplate
-#    extra = 1
-#
-#
-#class DomainTemplateAdmin(ForeignKeyAutocompleteAdmin):
-#    inlines = [RecordTemplateInline]
-#    list_display = ['name', 'add_domain_link', 'is_public_domain']
-#
-#
-#
-#
-#admin.site.register(SuperMaster, SuperMasterAdmin)
-#admin.site.register(DomainMetadata, DomainMetadataAdmin)
-#admin.site.register(CryptoKey, CryptoKeyAdmin)
-#admin.site.register(DomainTemplate, DomainTemplateAdmin)
 
 # SKIPPED
 #admin.site.register(Authorisation, AuthorisationAdmin)
