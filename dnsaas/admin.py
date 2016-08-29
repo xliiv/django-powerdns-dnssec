@@ -99,12 +99,6 @@ class DomainAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
 
 class RecordAdminForm(ModelForm):
 
-    def clean_type(self):
-        type = self.cleaned_data['type']
-        if not type:
-            raise ValidationError(_("Record type is required"))
-        return type
-
     def clean_domain(self):
         if (
             self.instance.pk and

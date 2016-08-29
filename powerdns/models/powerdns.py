@@ -337,7 +337,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
                     " domain!"),
     )
     type = models.CharField(
-        _("type"), max_length=6, blank=True, null=True,
+        _("type"), max_length=6, blank=False, null=True,
         choices=RECORD_TYPE, help_text=_("Record qtype"),
     )
     content = models.CharField(
