@@ -1,17 +1,21 @@
-from django_extensions.admin import ForeignKeyAutocompleteAdmin
 from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
 from django.contrib.admin.sites import AdminSite
+from django.contrib.admin.widgets import AdminRadioSelect
+from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from django.forms import (
-    HiddenInput,
     NullBooleanSelect,
     ModelForm,
     ValidationError,
-    ModelChoiceField,
 )
-from powerdns.models.templates import (
-    DomainTemplate,
-    RecordTemplate,
+from powerdns.models.requests import (
+    DeleteRequest,
+    DomainRequest,
+    RecordRequest,
 )
+from django.utils.translation import ugettext_lazy as _
+from django_extensions.admin import ForeignKeyAutocompleteAdmin
 
 from powerdns.models.powerdns import (
     CryptoKey,
@@ -20,83 +24,52 @@ from powerdns.models.powerdns import (
     Record,
     SuperMaster,
 )
+from powerdns.models.templates import (
+    DomainTemplate,
+    RecordTemplate,
+)
 from powerdns.models.tsigkeys import TsigKey
-from powerdns.utils import Owned, DomainForRecordValidator, is_owner
+from powerdns.utils import DomainForRecordValidator
 
 
 admin_site2 = AdminSite('admin2')
 
 
-#TODO: is this really needed?
-class CopyingAdmin(admin.ModelAdmin):
-
-    field_prefix = ''
-    target_prefix = ''
-
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        from_pk = request.GET.get(self.from_field)
-        if from_pk is not None:
-            self.from_object = self.FromModel.objects.get(pk=from_pk)
-            for field in self.CopyFieldsModel.copy_fields:
-                form.base_fields[field[len(self.field_prefix):]].initial = \
-                    getattr(self.from_object, field[len(self.target_prefix):])
-        else:
-            self.from_object = None
-        return form
+RECORD_LIST_FIELDS = (
+    'name',
+    'type',
+    'content',
+    'ttl',
+    'prio',
+)
 
 
-from rules.contrib.admin import ObjectPermissionsModelAdmin
-class OwnedAdmin(ForeignKeyAutocompleteAdmin, ObjectPermissionsModelAdmin):
-    """Admin for models with owner field"""
+class ReverseDomainListFilter(SimpleListFilter):
+    title = _('domain class')
 
-    def save_model(self, request, object_, form, change):
-        if object_.owner is None:
-            object_.owner = request.user
-        #TODO: rm it?
-        #object_.email_owner(request.user)
-        super(OwnedAdmin, self).save_model(request, object_, form, change)
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'domain_class'
 
-    #def get_related_filter(self, model, request):
-    #    #TODO:: i assume this fn is up to remove
-    #    return super(OwnedAdmin, self).get_related_filter(model, request)
-    #    user = request.user
-    #    if not issubclass(model, Owned) or rules.is_superuser(user):
-    #        return super(OwnedAdmin, self).get_related_filter(model, request)
-    #    return models.Q(owner=user)
+    def lookups(self, request, model_admin):
+        return (
+            ('fwd', _('domain:forward')),
+            ('rev', _('domain:reverse')),
+        )
+
+    def queryset(self, request, queryset):
+        q = (
+            models.Q(name__endswith='.in-addr.arpa') |
+            models.Q(name__endswith='.ip6.arpa')
+        )
+        if self.value() == 'fwd':
+            return queryset.exclude(q)
+        if self.value() == 'rev':
+            return queryset.filter(q)
 
 
-
-
-from django.utils.translation import ugettext_lazy as _
-from django.db import models
-try:
-    from django.contrib.admin import SimpleListFilter
-except ImportError:
-    _domain_filters = ('type', 'last_check', 'account',)
-else:
-    class ReverseDomainListFilter(SimpleListFilter):
-        title = _('domain class')
-
-        # Parameter for the filter that will be used in the URL query.
-        parameter_name = 'domain_class'
-
-        def lookups(self, request, model_admin):
-            return (
-                ('fwd', _('domain:forward')),
-                ('rev', _('domain:reverse')),
-            )
-
-        def queryset(self, request, queryset):
-            q = (models.Q(name__endswith='.in-addr.arpa') |
-                 models.Q(name__endswith='.ip6.arpa'))
-            if self.value() == 'fwd':
-                return queryset.exclude(q)
-            if self.value() == 'rev':
-                return queryset.filter(q)
-    _domain_filters = (
-        ReverseDomainListFilter, 'type', 'last_check', 'account',
-    )
+_domain_filters = (
+    ReverseDomainListFilter, 'type', 'last_check', 'account',
+)
 
 
 class DomainMetadataInline(admin.TabularInline):
@@ -104,7 +77,7 @@ class DomainMetadataInline(admin.TabularInline):
     extra = 0
 
 
-class DomainAdmin(OwnedAdmin, CopyingAdmin):
+class DomainAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
     inlines = [DomainMetadataInline]
     list_display = (
         'name',
@@ -122,10 +95,6 @@ class DomainAdmin(OwnedAdmin, CopyingAdmin):
     search_fields = ('name',)
     radio_fields = {'type': admin.HORIZONTAL}
     readonly_fields = ('notified_serial', 'created', 'modified')
-    # CopyingAdmin
-    FromModel = DomainTemplate
-    CopyFieldsModel = DomainTemplate
-    from_field = 'template'
 
 
 class RecordAdminForm(ModelForm):
@@ -147,10 +116,13 @@ class RecordAdminForm(ModelForm):
         validator = DomainForRecordValidator()
         validator.user = self.user
         return validator(self.cleaned_data['domain'])
-from django.contrib.admin.widgets import AdminRadioSelect
+
+
 class NullBooleanRadioSelect(NullBooleanSelect, AdminRadioSelect):
     pass
-class RecordAdmin(OwnedAdmin, CopyingAdmin):
+
+
+class RecordAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
     form = RecordAdminForm
     list_display = (
         'name',
@@ -162,7 +134,6 @@ class RecordAdmin(OwnedAdmin, CopyingAdmin):
         'prio',
         'change_date',
     )
-    #list_display_links = None
     list_filter = ('type', 'ttl', 'auth', 'domain', 'created', 'modified')
     list_per_page = 250
     save_on_top = True
@@ -193,24 +164,13 @@ class RecordAdmin(OwnedAdmin, CopyingAdmin):
             ),
         },
     }
-    # CopyingAdmin
-    FromModel = Domain
-    CopyFieldsModel = Domain
-    from_field = 'domain'
-    field_prefix = 'record_'
 
     def get_form(self, request, *args, **kwargs):
         form = super().get_form(request, *args, **kwargs)
         form.user = request.user
         return form
 
-RECORD_LIST_FIELDS = (
-    'name',
-    'type',
-    'content',
-    'ttl',
-    'prio',
-)
+
 class RecordTemplateAdmin(ForeignKeyAutocompleteAdmin):
     form = RecordAdminForm
     list_display = RECORD_LIST_FIELDS
@@ -235,6 +195,7 @@ class DomainMetadataAdmin(ForeignKeyAutocompleteAdmin):
     save_on_top = True
     search_fields = ('content',)
 
+
 class CryptoKeyAdmin(ForeignKeyAutocompleteAdmin):
     list_display = ('domain', 'flags', 'active', 'content',)
     list_filter = ('active', 'domain', 'created', 'modified')
@@ -253,18 +214,43 @@ class CryptoKeyAdmin(ForeignKeyAutocompleteAdmin):
         },
     }
 
+
+class DeleteRequestAdmin(admin.ModelAdmin):
+    fields = ['owner', 'target_id', 'content_type']
+
+    def add_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['deleted_item'] = str(
+            ContentType.objects.get(
+                pk=request.GET['content_type']
+            ).get_object_for_this_type(pk=request.GET['target_id'])
+        )
+        return super().add_view(request, extra_context=extra_context)
+
+
 class RecordTemplateInline(admin.StackedInline):
     model = RecordTemplate
     extra = 1
+
+
 class DomainTemplateAdmin(ForeignKeyAutocompleteAdmin):
     inlines = [RecordTemplateInline]
     list_display = ['name', 'add_domain_link', 'is_public_domain']
 
 
+class DomainRequestAdmin(admin.ModelAdmin):
+    list_display = ['domain']
+    readonly_fields = ['key']
 
+
+class RecordRequestAdmin(admin.ModelAdmin):
+    list_display = ['target_' + field for field in RECORD_LIST_FIELDS]
 
 
 #TODO:: restrict all only for superuser
+#TODO:: requests readonly
+#TODO:: other admins
+#TODO:: fk from autocomplete
 admin_site2.register(Domain, DomainAdmin)
 admin_site2.register(Record, RecordAdmin)
 admin_site2.register(RecordTemplate, RecordTemplateAdmin)
@@ -273,155 +259,6 @@ admin_site2.register(DomainMetadata, DomainMetadataAdmin)
 admin_site2.register(CryptoKey, CryptoKeyAdmin)
 admin_site2.register(TsigKey)
 admin_site2.register(DomainTemplate, DomainTemplateAdmin)
-
-
-
-
-# SKIPPED
-#import autocomplete_light
-#import rules
-#from django.contrib.auth import get_user_model
-#from django.contrib import admin
-#from django.contrib.contenttypes.models import ContentType
-#from django.db import models
-#from django.utils.translation import ugettext_lazy as _
-#from powerdns.models.authorisations import Authorisation
-#from threadlocals.threadlocals import get_current_user
-#
-#
-#from powerdns.models.powerdns import can_delete, can_edit
-#from powerdns.models.requests import (
-#    DeleteRequest,
-#    DomainRequest,
-#    RecordRequest,
-#)
-#
-#admin.site.register(Authorisation, AuthorisationAdmin)
-#admin.site.register(DomainRequest, DomainRequestAdmin)
-#admin.site.register(RecordRequest, RecordRequestAdmin)
-#admin.site.register(DeleteRequest, DeleteRequestAdmin)
-#import autocomplete_light
-#import rules
-#from django.contrib.auth import get_user_model
-#from django.contrib import admin
-#from django.contrib.contenttypes.models import ContentType
-#from django.db import models
-#from django.utils.translation import ugettext_lazy as _
-#from powerdns.models.authorisations import Authorisation
-#from threadlocals.threadlocals import get_current_user
-#
-#
-#from powerdns.models.powerdns import can_delete, can_edit
-#from powerdns.models.requests import (
-#    DeleteRequest,
-#    DomainRequest,
-#    RecordRequest,
-#)
-#
-#class RequestAdmin(CopyingAdmin):
-#    """Admin for domain/record requests"""
-#
-#    def get_form(self, *args, **kwargs):
-#        form = super().get_form(*args, **kwargs)
-#        form.base_fields['target_owner'].initial =\
-#            form.base_fields['target_owner'].initial or get_current_user()
-#        return form
-#
-#
-
-#class DomainRequestForm(autocomplete_light.forms.ModelForm):
-#    class Meta:
-#        exclude = ['owner', 'state']
-#
-#
-#class DomainRequestAdmin(RequestAdmin):
-#    form = DomainRequestForm
-#    list_display = ['domain']
-#    from_field = 'domain'
-#    FromModel = Domain
-#    CopyFieldsModel = DomainRequest
-#    target_prefix = 'target_'
-#    readonly_fields = ['key']
-#
-#
-#class AuthorisationForm(autocomplete_light.forms.ModelForm):
-#    class Meta:
-#        model = Authorisation
-#        fields = [
-#            'owner',
-#            'authorised',
-#            'target',
-#        ]
-#        autocomplete_fields = ['authorised', 'target']
-#
-#    owner = ModelChoiceField(
-#        queryset=get_user_model().objects.all(),
-#        widget=HiddenInput()
-#    )
-#
-#    def clean_target(self):
-#        target = self.cleaned_data['target']
-#        user = get_current_user()
-#        if not (user.is_superuser or is_owner(user, target)):
-#            raise ValidationError(_("You cannot authorize for this"))
-#        return target
-#
-#
-#class AuthorisationAdmin(ObjectPermissionsModelAdmin):
-#    form = AuthorisationForm
-#
-#    def get_changeform_initial_data(self, request, *args, **kwargs):
-#        data = super().get_changeform_initial_data(request, *args, **kwargs)
-#        data['owner'] = request.user
-#        return data
-#
-#
-#class DeleteRequestForm(ModelForm):
-#    class Meta:
-#        model = DeleteRequest
-#        fields = [
-#            'owner',
-#            'target_id',
-#            'content_type',
-#            'key',
-#        ]
-#        widgets = {
-#            'owner': HiddenInput(),
-#            'key': HiddenInput(),
-#            'target_id': HiddenInput(),
-#            'content_type': HiddenInput(),
-#        }
-#
-#
-#class DeleteRequestAdmin(ObjectPermissionsModelAdmin):
-#    form = DeleteRequestForm
-#    fields = ['owner', 'target_id', 'content_type']
-#
-#    def add_view(self, request, extra_context=None):
-#        extra_context = extra_context or {}
-#        extra_context['deleted_item'] = str(
-#            ContentType.objects.get(
-#                pk=request.GET['content_type']
-#            ).get_object_for_this_type(pk=request.GET['target_id'])
-#        )
-#        return super().add_view(request, extra_context=extra_context)
-#
-#
-#class RecordRequestForm(autocomplete_light.forms.ModelForm):
-#    class Meta:
-#        exclude = ['owner', 'state']
-#
-#
-#class RecordRequestAdmin(RequestAdmin):
-#    form = RecordRequestForm
-#    list_display = ['target_' + field for field in RECORD_LIST_FIELDS]
-#    from_field = 'record'
-#    FromModel = Record
-#    CopyFieldsModel = RecordRequest
-#    target_prefix = 'target_'
-#
-#    def get_form(self, request, obj=None, **kwargs):
-#        form = super().get_form(request, obj, **kwargs)
-#        if self.from_object:
-#            form.base_fields['domain'].initial = self.from_object.domain
-#        return form
+admin_site2.register(DomainRequest, DomainRequestAdmin)
+admin_site2.register(RecordRequest, RecordRequestAdmin)
+admin_site2.register(DeleteRequest, DeleteRequestAdmin)
