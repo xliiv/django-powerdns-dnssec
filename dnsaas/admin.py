@@ -180,10 +180,6 @@ class CryptoKeyAdmin(ForeignKeyAutocompleteAdmin):
     }
 
 
-class DeleteRequestAdmin(admin.ModelAdmin):
-    fields = ['owner', 'target_id', 'content_type']
-
-
 class RecordTemplateInline(admin.StackedInline):
     model = RecordTemplate
     extra = 1
@@ -194,18 +190,36 @@ class DomainTemplateAdmin(ForeignKeyAutocompleteAdmin):
     list_display = ['name', 'add_domain_link', 'is_public_domain']
 
 
-class DomainRequestAdmin(admin.ModelAdmin):
+class ReadonlyAdminMixin(object):
+    def __init__(self, *args, **kwargs):
+        self.readonly_fields = self.model._meta.get_all_field_names()
+        super().__init__(*args, **kwargs)
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class DeleteRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
+    model = DeleteRequest
+    fields = ['owner', 'target_id', 'content_type']
+
+
+class DomainRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
+    model = DomainRequest
     list_display = ['domain']
-    readonly_fields = ['key']
 
 
-class RecordRequestAdmin(admin.ModelAdmin):
+class RecordRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
+    model = RecordRequest
     list_display = ['target_' + field for field in RECORD_LIST_FIELDS]
 
 
 #TODO:: permissions
     #TODO:: restrict all only for superuser
-    #TODO:: new admin requests readonly
+    #TODO:: rules
 #TODO:: main look and feel (so fk from autocomplete, or something to prevent long requests)
 admin.site.register(Domain, DomainAdmin)
 admin.site.register(Record, RecordAdmin)
