@@ -95,27 +95,11 @@ class DomainAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
     readonly_fields = ('notified_serial', 'created', 'modified')
 
 
-class RecordAdminForm(ModelForm):
-
-    def clean_domain(self):
-        if (
-            self.instance.pk and
-            self.instance.domain == self.cleaned_data['domain']
-        ):
-            # Domain unchanged. Maybe user was assigned the record in a domain
-            # She doesn't own.
-            return self.cleaned_data['domain']
-        validator = DomainForRecordValidator()
-        validator.user = self.user
-        return validator(self.cleaned_data['domain'])
-
-
 class NullBooleanRadioSelect(NullBooleanSelect, AdminRadioSelect):
     pass
 
 
 class RecordAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
-    form = RecordAdminForm
     list_display = (
         'name',
         'type',
@@ -164,7 +148,6 @@ class RecordAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
 
 
 class RecordTemplateAdmin(ForeignKeyAutocompleteAdmin):
-    form = RecordAdminForm
     list_display = RECORD_LIST_FIELDS
 
 
@@ -209,15 +192,6 @@ class CryptoKeyAdmin(ForeignKeyAutocompleteAdmin):
 
 class DeleteRequestAdmin(admin.ModelAdmin):
     fields = ['owner', 'target_id', 'content_type']
-
-    def add_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['deleted_item'] = str(
-            ContentType.objects.get(
-                pk=request.GET['content_type']
-            ).get_object_for_this_type(pk=request.GET['target_id'])
-        )
-        return super().add_view(request, extra_context=extra_context)
 
 
 class RecordTemplateInline(admin.StackedInline):
