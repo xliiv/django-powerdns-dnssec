@@ -108,21 +108,6 @@ class RecordAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
     related_search_fields = {
         'domain': ('name',),
     }
-    fieldsets = (
-        (None, {
-            'fields': (
-                'owner',
-                'domain',
-                ('type', 'name', 'content',),
-                'auth',
-            ),
-        }),
-        ('Advanced options', {
-            'classes': ('collapse',),
-            'fields': ('prio', 'ttl', 'ordername', 'change_date',)
-        }),
-        (None, {'fields': ('created', 'modified')})
-    )
     formfield_overrides = {
         models.NullBooleanField: {
             'widget': NullBooleanRadioSelect(
