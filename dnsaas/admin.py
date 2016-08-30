@@ -69,11 +69,7 @@ class DomainAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
         'type',
         'last_check',
         'account',
-        'add_record_link',
-        'request_change',
-        'request_deletion'
     )
-    list_display_links = None
     list_filter = (
         ReverseDomainListFilter, 'type', 'last_check', 'account', 'created',
         'modified'
