@@ -67,11 +67,6 @@ class ReverseDomainListFilter(SimpleListFilter):
             return queryset.filter(q)
 
 
-_domain_filters = (
-    ReverseDomainListFilter, 'type', 'last_check', 'account',
-)
-
-
 class DomainMetadataInline(admin.TabularInline):
     model = DomainMetadata
     extra = 0
@@ -89,7 +84,10 @@ class DomainAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
         'request_deletion'
     )
     list_display_links = None
-    list_filter = _domain_filters + ('created', 'modified')
+    list_filter = (
+        ReverseDomainListFilter, 'type', 'last_check', 'account', 'created',
+        'modified'
+    )
     list_per_page = 250
     save_on_top = True
     search_fields = ('name',)
