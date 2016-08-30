@@ -1,14 +1,8 @@
 from django.contrib import admin
 from django.contrib.admin import SimpleListFilter
-from django.contrib.admin.sites import AdminSite
 from django.contrib.admin.widgets import AdminRadioSelect
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.forms import (
-    NullBooleanSelect,
-    ModelForm,
-    ValidationError,
-)
+from django.forms import NullBooleanSelect
 from powerdns.models.requests import (
     DeleteRequest,
     DomainRequest,
@@ -29,10 +23,6 @@ from powerdns.models.templates import (
     RecordTemplate,
 )
 from powerdns.models.tsigkeys import TsigKey
-from powerdns.utils import DomainForRecordValidator
-
-
-admin_site2 = AdminSite('admin2')
 
 
 RECORD_LIST_FIELDS = (
@@ -213,18 +203,18 @@ class RecordRequestAdmin(admin.ModelAdmin):
     list_display = ['target_' + field for field in RECORD_LIST_FIELDS]
 
 
-#TODO:: restrict all only for superuser
-#TODO:: requests readonly
-#TODO:: other admins
-#TODO:: fk from autocomplete
-admin_site2.register(Domain, DomainAdmin)
-admin_site2.register(Record, RecordAdmin)
-admin_site2.register(RecordTemplate, RecordTemplateAdmin)
-admin_site2.register(SuperMaster, SuperMasterAdmin)
-admin_site2.register(DomainMetadata, DomainMetadataAdmin)
-admin_site2.register(CryptoKey, CryptoKeyAdmin)
-admin_site2.register(TsigKey)
-admin_site2.register(DomainTemplate, DomainTemplateAdmin)
-admin_site2.register(DomainRequest, DomainRequestAdmin)
-admin_site2.register(RecordRequest, RecordRequestAdmin)
-admin_site2.register(DeleteRequest, DeleteRequestAdmin)
+#TODO:: permissions
+    #TODO:: restrict all only for superuser
+    #TODO:: new admin requests readonly
+#TODO:: main look and feel (so fk from autocomplete, or something to prevent long requests)
+admin.site.register(Domain, DomainAdmin)
+admin.site.register(Record, RecordAdmin)
+admin.site.register(RecordTemplate, RecordTemplateAdmin)
+admin.site.register(SuperMaster, SuperMasterAdmin)
+admin.site.register(DomainMetadata, DomainMetadataAdmin)
+admin.site.register(CryptoKey, CryptoKeyAdmin)
+admin.site.register(TsigKey)
+admin.site.register(DomainTemplate, DomainTemplateAdmin)
+admin.site.register(DomainRequest, DomainRequestAdmin)
+admin.site.register(RecordRequest, RecordRequestAdmin)
+admin.site.register(DeleteRequest, DeleteRequestAdmin)
