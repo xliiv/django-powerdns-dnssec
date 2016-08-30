@@ -217,10 +217,6 @@ class RecordRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
     list_display = ['target_' + field for field in RECORD_LIST_FIELDS]
 
 
-#TODO:: permissions
-    #TODO:: restrict all only for superuser
-    #TODO:: rules
-#TODO:: main look and feel (so fk from autocomplete, or something to prevent long requests)
 admin.site.register(Domain, DomainAdmin)
 admin.site.register(Record, RecordAdmin)
 admin.site.register(RecordTemplate, RecordTemplateAdmin)
