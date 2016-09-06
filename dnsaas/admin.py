@@ -55,6 +55,7 @@ class ReverseDomainListFilter(SimpleListFilter):
             return queryset.exclude(q)
         if self.value() == 'rev':
             return queryset.filter(q)
+        return queryset
 
 
 class DomainMetadataInline(admin.TabularInline):
@@ -112,11 +113,6 @@ class RecordAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
             ),
         },
     }
-
-    def get_form(self, request, *args, **kwargs):
-        form = super().get_form(request, *args, **kwargs)
-        form.user = request.user
-        return form
 
 
 class RecordTemplateAdmin(ForeignKeyAutocompleteAdmin):
