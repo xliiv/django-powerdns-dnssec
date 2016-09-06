@@ -86,6 +86,7 @@ class NullBooleanRadioSelect(NullBooleanSelect, AdminRadioSelect):
 
 
 class RecordAdmin(ForeignKeyAutocompleteAdmin, admin.ModelAdmin):
+    list_select_related = ('depends_on', 'domain', 'owner', 'template',)
     list_display = (
         'name',
         'type',
@@ -130,6 +131,7 @@ class SuperMasterAdmin(admin.ModelAdmin):
 
 
 class DomainMetadataAdmin(ForeignKeyAutocompleteAdmin):
+    list_select_related = ('domain',)
     list_display = ('domain', 'kind', 'content',)
     list_filter = ('kind', 'domain', 'created', 'modified')
     list_per_page = 250
@@ -145,6 +147,7 @@ class DomainMetadataAdmin(ForeignKeyAutocompleteAdmin):
 class CryptoKeyAdmin(ForeignKeyAutocompleteAdmin):
     list_display = ('domain', 'flags', 'active', 'content',)
     list_filter = ('active', 'domain', 'created', 'modified')
+    list_select_related = ('domain',)
     list_per_page = 250
     readonly_fields = ('created', 'modified')
     related_search_fields = {

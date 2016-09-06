@@ -244,8 +244,11 @@ class Domain(TimeTrackable, Owned, WithRequests):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._original_values = {}
-        for field in self._meta.fields:
-            self._original_values[field.name] = getattr(self, field.name)
+        fields = [f.name for f in self.__class__._meta.get_fields()]
+        self._original_values = {
+            k: v for k, v in self.__dict__.items() if k in fields
+        }
+
 
     def __str__(self):
         return self.name
