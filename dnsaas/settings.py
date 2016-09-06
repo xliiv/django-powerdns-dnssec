@@ -151,9 +151,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
     'rules',
-
-    'debug_toolbar',
-
 )
 
 AUTHENTICATION_BACKENDS = (
