@@ -139,7 +139,7 @@ class WithRequests(models.Model):
             ):
                 return '<a href={}>{}</a>'.format(
                     reverse(
-                        fmt('admin:powerdns_{obj}_{opr}'),
+                        fmt('admin-deprecated:powerdns_{obj}_{opr}'),
                         args=(self.pk,)
                     ),
                     operation.capitalize()
@@ -147,7 +147,7 @@ class WithRequests(models.Model):
             if operation == 'delete':
                 return '<a href="{}">Request deletion</a>'.format(
                     reverse(
-                        fmt('admin:powerdns_deleterequest_add')
+                        fmt('admin-deprecated:powerdns_deleterequest_add')
                     ) + '?target_id={}&content_type={}'.format(
                         self.pk,
                         ContentType.objects.get_for_model(type(self)).pk,
@@ -156,7 +156,7 @@ class WithRequests(models.Model):
 
             return '<a href="{}">Request change</a>'.format(
                 reverse(
-                    fmt('admin:powerdns_{obj}request_add')
+                    fmt('admin-deprecated:powerdns_{obj}request_add')
                 ) + '?{}={}'.format(
                     type(self)._meta.object_name.lower(),
                     self.pk
@@ -270,7 +270,7 @@ class Domain(TimeTrackable, Owned, WithRequests):
         """Return URL for 'Add record' action"""
         model = 'record' if authorised else 'recordrequest'
         return (
-            reverse('admin:powerdns_{}_add'.format(model)) +
+            reverse('admin-deprecated:powerdns_{}_add'.format(model)) +
             '?domain={}'.format(self.pk)
         )
 
@@ -438,7 +438,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             ):
                 return '<a href={}>{}</a>'.format(
                     reverse(
-                        fmt('admin:powerdns_{obj}_{opr}'),
+                        fmt('admin-deprecated:powerdns_{obj}_{opr}'),
                         args=(self.pk,)
                     ),
                     operation.capitalize()
@@ -446,7 +446,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             if operation == 'delete':
                 return '<a href="{}">Request deletion</a>'.format(
                     reverse(
-                        fmt('admin:powerdns_deleterequest_add')
+                        fmt('admin-deprecated:powerdns_deleterequest_add')
                     ) + '?target_id={}&content_type={}'.format(
                         self.pk,
                         ContentType.objects.get_for_model(type(self)).pk,
@@ -455,7 +455,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
 
             return '<a href="{}">Request change</a>'.format(
                 reverse(
-                    fmt('admin:powerdns_{obj}request_add')
+                    fmt('admin-deprecated:powerdns_{obj}request_add')
                 ) + '?{}={}'.format(
                     type(self)._meta.object_name.lower(),
                     self.pk
