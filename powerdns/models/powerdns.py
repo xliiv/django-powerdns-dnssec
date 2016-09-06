@@ -249,7 +249,6 @@ class Domain(TimeTrackable, Owned, WithRequests):
             k: v for k, v in self.__dict__.items() if k in fields
         }
 
-
     def __str__(self):
         return self.name
 
