@@ -274,6 +274,8 @@ class Domain(TimeTrackable, Owned, WithRequests):
             "to it without owner's permission?"
         )
     )
+    # dnsaas specific fields here, until it will isolated to seprate model
+    service = models.ForeignKey(Service, blank=True, null=True)
 
     class Meta:
         db_table = u'domains'
@@ -448,6 +450,8 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         content_type_field='content_type',
         object_id_field='target_id',
     )
+    # dnsaas specific fields here, until it will isolated to seprate model
+    service = models.ForeignKey(Service, blank=True, null=True)
 
     class Meta:
         db_table = u'records'

@@ -16,11 +16,11 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Service',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
-                ('created', models.DateTimeField(verbose_name='date created', auto_now_add=True)),
-                ('modified', models.DateTimeField(verbose_name='last modified', auto_now=True)),
+                ('id', models.AutoField(serialize=False, auto_created=True, verbose_name='ID', primary_key=True)),
+                ('created', models.DateTimeField(auto_now_add=True, verbose_name='date created')),
+                ('modified', models.DateTimeField(auto_now=True, verbose_name='last modified')),
                 ('name', models.CharField(verbose_name='name', unique=True, max_length=255)),
-                ('uid', models.CharField(db_index=True, unique=True, max_length=100)),
+                ('uid', models.CharField(max_length=100, unique=True, db_index=True)),
                 ('status', models.CharField(choices=[('ACTIVE', 'Active')], db_index=True, max_length=100)),
             ],
             options={
@@ -30,9 +30,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ServiceOwner',
             fields=[
-                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
-                ('created', models.DateTimeField(verbose_name='date created', auto_now_add=True)),
-                ('modified', models.DateTimeField(verbose_name='last modified', auto_now=True)),
+                ('id', models.AutoField(serialize=False, auto_created=True, verbose_name='ID', primary_key=True)),
+                ('created', models.DateTimeField(auto_now_add=True, verbose_name='date created')),
+                ('modified', models.DateTimeField(auto_now=True, verbose_name='last modified')),
                 ('ownership_type', models.CharField(choices=[('BO', 'Business Owner'), ('TO', 'Technical Owner')], db_index=True, max_length=10)),
                 ('service', models.ForeignKey(to='powerdns.Service')),
                 ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
@@ -44,6 +44,16 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='service',
             name='owners',
-            field=models.ManyToManyField(to=settings.AUTH_USER_MODEL, through='powerdns.ServiceOwner'),
+            field=models.ManyToManyField(through='powerdns.ServiceOwner', to=settings.AUTH_USER_MODEL),
+        ),
+        migrations.AddField(
+            model_name='domain',
+            name='service',
+            field=models.ForeignKey(blank=True, to='powerdns.Service', null=True),
+        ),
+        migrations.AddField(
+            model_name='record',
+            name='service',
+            field=models.ForeignKey(blank=True, to='powerdns.Service', null=True),
         ),
     ]
