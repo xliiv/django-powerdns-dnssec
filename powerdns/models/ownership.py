@@ -1,3 +1,13 @@
+"""
+This module provide a new way of ownership/permission to Domains and Records.
+
+The main concept of this is:
+    - all Domains and Records belongs to a Service
+    - Service has owners
+    - Permissions to adding/editing/deleting Domains and Records comes from
+        this ownership
+"""
+
 from enum import Enum
 
 from django.conf import settings
