@@ -31,11 +31,7 @@ class OwnershipType(Enum):
 
 
 class Service(TimeTrackable):
-    name = models.CharField(
-        _("name"),
-        unique=True,
-        max_length=255,
-    )
+    name = models.CharField(_("name"), max_length=255)
     uid = models.CharField(max_length=100, unique=True, db_index=True)
     status = models.CharField(
         max_length=100, db_index=True,
@@ -44,6 +40,9 @@ class Service(TimeTrackable):
     owners = models.ManyToManyField(
         settings.AUTH_USER_MODEL, through='ServiceOwner'
     )
+
+    def __str__(self):
+        return '{} {} ({})'.format(self.name, self.status, self.uid)
 
 
 class ServiceOwner(TimeTrackable):
