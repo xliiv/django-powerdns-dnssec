@@ -18,6 +18,7 @@ from django.core.urlresolvers import reverse
 from IPy import IP
 from threadlocals.threadlocals import get_current_user
 
+from powerdns.models.ownership import OwnershipByService
 from powerdns.utils import (
     AutoPtrOptions,
     is_authorised,
@@ -170,46 +171,9 @@ class WithRequests(models.Model):
     request_deletion = request_factory('delete')
 
 
-from enum import Enum
-class ServiceStatus(Enum):
-    ACTIVE = 'Active'
-    #OBSOLETE = 'Obsolete'
-    #PENDING_OBSOLESCENCE = 'Pending Obsolescence'
-    #PLANNING = 'Planning'
-    #PENDING = 'Pending'
-class OwnershipType(Enum):
-    BO = 'Business Owner'
-    TO = 'Technical Owner'
-class Service(TimeTrackable):
-    name = models.CharField(
-        _("name"),
-        unique=True,
-        max_length=255,
-    )
-    uid = models.CharField(max_length=100, unique=True, db_index=True)
-    status = models.CharField(
-        max_length=100, db_index=True,
-        choices=[(status.name, status.value) for status in ServiceStatus]
-    )
-    owners = models.ManyToManyField(
-        settings.AUTH_USER_MODEL, through='ServiceOwner'
-    )
-
-class ServiceOwner(TimeTrackable):
-    service = models.ForeignKey(Service)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
-    ownership_type = models.CharField(
-        max_length=10, db_index=True,
-        choices=[(type_.name, type_.value) for type_ in OwnershipType],
-    )
-
-    def __str__(self):
-        return '{} - {} ({})'.format(
-            self.user, self.service, self.ownership_type,
-        )
-
-
-class Domain(TimeTrackable, Owned, WithRequests):
+class Domain(
+    OwnershipByService, TimeTrackable, Owned, WithRequests
+):
     '''
     PowerDNS domains
     '''
@@ -274,8 +238,6 @@ class Domain(TimeTrackable, Owned, WithRequests):
             "to it without owner's permission?"
         )
     )
-    # dnsaas specific fields here, until it will isolated to seprate model
-    service = models.ForeignKey(Service, blank=True, null=True)
 
     class Meta:
         db_table = u'domains'
@@ -359,7 +321,9 @@ rules.add_perm('powerdns.change_domain', can_edit)
 rules.add_perm('powerdns.delete_domain', can_delete)
 
 
-class Record(TimeTrackable, Owned, RecordLike, WithRequests):
+class Record(
+    OwnershipByService, TimeTrackable, Owned, RecordLike, WithRequests
+):
     '''
     PowerDNS DNS records
     '''
@@ -450,8 +414,6 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         content_type_field='content_type',
         object_id_field='target_id',
     )
-    # dnsaas specific fields here, until it will isolated to seprate model
-    service = models.ForeignKey(Service, blank=True, null=True)
 
     class Meta:
         db_table = u'records'
