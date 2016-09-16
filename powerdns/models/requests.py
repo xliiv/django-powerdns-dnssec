@@ -66,13 +66,38 @@ class Request(Owned):
             RequestStates.DescFromID(self.state).lower(),
         ))
 
+    def can_auto_accept(self, user, action):
+        #TODO:: throw exception when domain missing?
+        can_accept = None
+        if action == 'update':
+            can_accept = (
+                self.domain.can_auto_accept(user) and
+                self.record.can_auto_accept(user)
+            )
+        elif action == 'create':
+            can_accept = self.domain.can_auto_accept(user)
+        elif action == 'delete':
+            can_accept = (
+                self.record.domain.can_auto_accept(user) and
+                self.record.can_auto_accept(user)
+            )
+        return can_accept
 
+
+class RequestTypeError(Exception):
+    pass
 class DeleteRequest(Request):
     """A request for object deletion"""
     content_type = models.ForeignKey(ContentType)
     target_id = models.PositiveIntegerField()
     target = GenericForeignKey('content_type', 'target_id')
     view = 'accept_delete'
+
+    @property
+    def record(self):
+        if self.content_type != ContentType.objects.get_for_model(Record):
+            raise RequestTypeError("This is not record related request")
+        return self.target
 
     @transaction.atomic
     def accept(self):
@@ -419,21 +444,6 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
             'ttl':  self.target_ttl or '',
             'type':  self.target_type or '',
         }
-
-    def can_auto_accept(self, user):
-        #TODO:: throw exception when domain missing?
-        can_accept = None
-        if self.record:
-            # update
-            can_accept = (
-                self.domain.can_auto_accept(user) and
-                self.record.can_auto_accept(user)
-            )
-        if not self.record:
-            # create
-            can_accept = self.domain.can_auto_accept(user)
-        # TODO: delete
-        return can_accept
 
 
 rules.add_perm('powerdns.add_recordrequest', rules.is_authenticated)

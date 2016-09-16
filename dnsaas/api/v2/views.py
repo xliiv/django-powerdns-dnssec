@@ -142,7 +142,7 @@ class RecordViewSet(OwnerViewSet):
         record_request.owner = request.user
         record_request.target_owner = serializer.validated_data['owner']
 
-        if record_request.can_auto_accept(request.user):
+        if record_request.can_auto_accept(request.user, 'create'):
             serializer.instance = record_request.accept()
             data = serializer.data
             code = status.HTTP_201_CREATED
@@ -198,7 +198,7 @@ class RecordViewSet(OwnerViewSet):
         record_request.target_owner = serializer.validated_data.get('owner')
         record_request.record = serializer.instance
 
-        if record_request.can_auto_accept(request.user):
+        if record_request.can_auto_accept(request.user, 'update'):
             serializer.instance = record_request.accept()
             data = serializer.data
             code = status.HTTP_200_OK
@@ -237,10 +237,7 @@ class RecordViewSet(OwnerViewSet):
         delete_request = DeleteRequest(
             owner=request.user, target=instance,
         )
-        if (
-            instance.domain.can_auto_accept(request.user) and
-            instance.can_auto_accept(request.user)
-        ):
+        if delete_request.can_auto_accept(request.user, 'delete'):
             delete_request.accept()
             code = status.HTTP_204_NO_CONTENT
         else:
