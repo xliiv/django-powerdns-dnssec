@@ -420,5 +420,16 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
             'type':  self.target_type or '',
         }
 
+    def can_auto_accept(self, user):
+        can_accept = None
+        if self.record:
+            # update
+            pass
+        if not self.record:
+            # create
+            can_accept = self.domain.can_auto_accept(user)
+        # TODO: delete
+        return can_accept
+
 
 rules.add_perm('powerdns.add_recordrequest', rules.is_authenticated)

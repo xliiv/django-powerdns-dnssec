@@ -142,9 +142,7 @@ class RecordViewSet(OwnerViewSet):
         record_request.owner = request.user
         record_request.target_owner = serializer.validated_data['owner']
 
-        if serializer.validated_data['domain'].can_auto_accept(
-            request.user
-        ):
+        if record_request.can_auto_accept(request.user):
             serializer.instance = record_request.accept()
             data = serializer.data
             code = status.HTTP_201_CREATED
