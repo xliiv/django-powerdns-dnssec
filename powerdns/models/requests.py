@@ -421,10 +421,14 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
         }
 
     def can_auto_accept(self, user):
+        #TODO:: throw exception when domain missing?
         can_accept = None
         if self.record:
             # update
-            pass
+            can_accept = (
+                self.domain.can_auto_accept(user) and
+                self.record.can_auto_accept(user)
+            )
         if not self.record:
             # create
             can_accept = self.domain.can_auto_accept(user)

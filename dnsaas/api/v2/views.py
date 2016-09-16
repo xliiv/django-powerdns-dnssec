@@ -198,10 +198,7 @@ class RecordViewSet(OwnerViewSet):
         record_request.target_owner = serializer.validated_data.get('owner')
         record_request.record = serializer.instance
 
-        if (
-            serializer.instance.domain.can_auto_accept(request.user) and
-            instance.can_auto_accept(request.user)
-        ):
+        if record_request.can_auto_accept(request.user):
             serializer.instance = record_request.accept()
             data = serializer.data
             code = status.HTTP_200_OK
