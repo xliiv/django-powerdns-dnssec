@@ -43,10 +43,6 @@ class RecordTemplateFactory(DjangoModelFactory):
         model = RecordTemplate
 
 
-
-
-
-
 class ServiceFactory(DjangoModelFactory):
     class Meta:
         model = Service
@@ -58,9 +54,6 @@ class ServiceOwnerFactory(DjangoModelFactory):
         model = ServiceOwner
     service = factory.SubFactory(UserFactory)
     user = factory.SubFactory(UserFactory)
-
-
-
 
 
 class DomainFactory(DjangoModelFactory):

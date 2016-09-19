@@ -67,7 +67,8 @@ class Request(Owned):
         ))
 
     def can_auto_accept(self, user, action):
-        #TODO:: throw exception when domain missing?
+        if not self.domain:
+            raise Exception("Can't check auto acceptance without domain set")
         can_accept = None
         if action == 'create':
             can_accept = self.domain.can_auto_accept(user)
@@ -86,6 +87,8 @@ class Request(Owned):
 
 class RequestTypeError(Exception):
     pass
+
+
 class DeleteRequest(Request):
     """A request for object deletion"""
     content_type = models.ForeignKey(ContentType)
