@@ -20,7 +20,6 @@ from powerdns.tests.utils import (
     DomainTemplateFactory,
     RecordFactory,
     RecordRequestFactory,
-    ServiceOwnerFactory,
     UserFactory
 )
 from dnsaas.api.v2.views import RecordViewSet
@@ -847,89 +846,3 @@ class TestTrimmingSpaces(TestCase):
         data = {'field': ' a '}
         _trim_whitespace(data, ('some-other-field', ))
         self.assertEqual(data['field'], ' a ')
-
-
-#TODO:: better names for tests and docstrings and dedicated file
-from powerdns.utils import AutoPtrOptions
-from powerdns.models.authorisations import Authorisation
-class TestUpdateRecordAccessByServiceOwnership(BaseApiTestCase):
-
-    def setUp(self):
-        self.clicker = UserFactory(username='clicker')
-        self.some_dude = UserFactory(username='some_dude')
-        self.example_domain = DomainFactory(
-            owner=self.clicker,
-            name='example.com',
-            unrestricted=False,
-            auto_ptr=AutoPtrOptions.NEVER,
-        )
-        self.example_record = RecordFactory(
-            owner=None,
-            type='A',
-            name='example.com',
-            content='192.168.1.0',
-        )
-    def _test_update(self, domain_owner, record_owner, record_ownership, expected):
-        self.example_domain.owner = domain_owner
-        self.example_record.owner = record_owner
-        self.example_record.service.owners.clear()
-        self.service = ServiceOwnerFactory(
-            service=self.example_record.service, user=record_ownership,
-        )
-        self.example_domain.save()
-        self.example_record.save()
-        self.service.save()
-
-        record_request = RecordRequest(
-            domain=self.example_domain,
-            record=self.example_record,
-        )
-
-        result = record_request.can_auto_accept(self.clicker, 'update')
-        self.assertEqual(result, expected)
-
-
-    def test_ownership_allows_update_when_blank_authorisation(self):
-        self._test_update(
-            domain_owner=self.clicker,
-            record_owner=None,
-            record_ownership=self.clicker,
-            expected=True
-        )
-    def test_ownership_2(self):
-        self._test_update(
-            domain_owner=self.some_dude,
-            record_owner=None,
-            record_ownership=self.clicker,
-            expected=False,
-        )
-
-    def test_ownership_allows_update_when_no_authorisation(self):
-        self._test_update(
-            domain_owner=self.clicker,
-            record_owner=self.some_dude,
-            record_ownership=self.clicker,
-            expected=True
-        )
-    def test_ownership_3(self):
-        self._test_update(
-            domain_owner=self.some_dude,
-            record_owner=self.some_dude,
-            record_ownership=self.clicker,
-            expected=False
-        )
-
-    def test_ownership_rejects_update_when_no_both(self):
-        self._test_update(
-            domain_owner=self.clicker,
-            record_owner=self.some_dude,
-            record_ownership=self.some_dude,
-            expected=False
-        )
-    def test_ownership_4(self):
-        self._test_update(
-            domain_owner=self.some_dude,
-            record_owner=self.some_dude,
-            record_ownership=self.some_dude,
-            expected=False
-        )
