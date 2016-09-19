@@ -69,13 +69,13 @@ class Request(Owned):
     def can_auto_accept(self, user, action):
         #TODO:: throw exception when domain missing?
         can_accept = None
-        if action == 'update':
+        if action == 'create':
+            can_accept = self.domain.can_auto_accept(user)
+        elif action == 'update':
             can_accept = (
                 self.domain.can_auto_accept(user) and
                 self.record.can_auto_accept(user)
             )
-        elif action == 'create':
-            can_accept = self.domain.can_auto_accept(user)
         elif action == 'delete':
             can_accept = (
                 self.record.domain.can_auto_accept(user) and
