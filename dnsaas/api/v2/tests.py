@@ -849,9 +849,7 @@ class TestTrimmingSpaces(TestCase):
         self.assertEqual(data['field'], ' a ')
 
 
-#TODO:: better organisation of tests
-#TODO:: is this same as existing tests?
-#TODO:: could be ddt includding domain
+#TODO:: better names for tests and docstrings and dedicated file
 from powerdns.utils import AutoPtrOptions
 from powerdns.models.authorisations import Authorisation
 class TestUpdateRecordAccessByServiceOwnership(BaseApiTestCase):
@@ -871,17 +869,6 @@ class TestUpdateRecordAccessByServiceOwnership(BaseApiTestCase):
             name='example.com',
             content='192.168.1.0',
         )
-    # tests for domain=clicker
-    # auth=None, ownership=clicker, expected=True
-    # auth=some_dude, ownership=clicker, expected=True
-    # auth=some_dude, ownership=some_dude, expected=False
-
-    #TODO:: could be ddt
-    # tests for domain=some_dude
-    # auth=None, ownership=clicker, expected=True
-    # auth=some_dude, ownership=clicker, expected=True
-    # auth=some_dude, ownership=some_dude, expected=False
-
     def _test_update(self, domain_owner, record_owner, record_ownership, expected):
         self.example_domain.owner = domain_owner
         self.example_record.owner = record_owner
@@ -903,13 +890,46 @@ class TestUpdateRecordAccessByServiceOwnership(BaseApiTestCase):
 
 
     def test_ownership_allows_update_when_blank_authorisation(self):
-        "record_owner=None, ownership=clicker, expected=True"
-        self._test_update(self.clicker, None, self.clicker, True)
+        self._test_update(
+            domain_owner=self.clicker,
+            record_owner=None,
+            record_ownership=self.clicker,
+            expected=True
+        )
+    def test_ownership_2(self):
+        self._test_update(
+            domain_owner=self.some_dude,
+            record_owner=None,
+            record_ownership=self.clicker,
+            expected=False,
+        )
 
     def test_ownership_allows_update_when_no_authorisation(self):
-        "record_owner=some_dude, ownership=clicker, expected=True"
-        self._test_update(self.clicker, self.some_dude, self.clicker, True)
+        self._test_update(
+            domain_owner=self.clicker,
+            record_owner=self.some_dude,
+            record_ownership=self.clicker,
+            expected=True
+        )
+    def test_ownership_3(self):
+        self._test_update(
+            domain_owner=self.some_dude,
+            record_owner=self.some_dude,
+            record_ownership=self.clicker,
+            expected=False
+        )
 
     def test_ownership_rejects_update_when_no_both(self):
-        "record_owner=some_dude, ownership=some_dude, expected=False"
-        self._test_update(self.clicker, self.some_dude, self.some_dude, False)
+        self._test_update(
+            domain_owner=self.clicker,
+            record_owner=self.some_dude,
+            record_ownership=self.some_dude,
+            expected=False
+        )
+    def test_ownership_4(self):
+        self._test_update(
+            domain_owner=self.some_dude,
+            record_owner=self.some_dude,
+            record_ownership=self.some_dude,
+            expected=False
+        )
