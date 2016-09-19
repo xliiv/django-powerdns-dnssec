@@ -854,7 +854,7 @@ class TestTrimmingSpaces(TestCase):
 #TODO:: could be ddt includding domain
 from powerdns.utils import AutoPtrOptions
 from powerdns.models.authorisations import Authorisation
-class TestRecordAccessByServiceOwnership(BaseApiTestCase):
+class TestUpdateRecordAccessByServiceOwnership(BaseApiTestCase):
 
     def setUp(self):
         self.clicker = UserFactory(username='clicker')
@@ -882,57 +882,32 @@ class TestRecordAccessByServiceOwnership(BaseApiTestCase):
     # auth=some_dude, ownership=clicker, expected=True
     # auth=some_dude, ownership=some_dude, expected=False
 
+    def _test_update(self, record_owner, record_ownership, expected):
+        self.example_record.owner = record_owner
+        self.example_record.service.owners.clear()
+        self.service = ServiceOwnerFactory(
+            service=self.example_record.service, user=record_ownership,
+        )
+        self.example_record.save()
+        self.service.save()
+
+        record_request = RecordRequest(
+            domain=self.example_domain,
+            record=self.example_record,
+        )
+
+        result = record_request.can_auto_accept(self.clicker, 'update')
+        self.assertEqual(result, expected)
+
 
     def test_ownership_allows_update_when_blank_authorisation(self):
         "record_owner=None, ownership=clicker, expected=True"
-        self.example_record.owner = None
-        self.example_record.service.owners.clear()
-        self.service = ServiceOwnerFactory(
-            service=self.example_record.service, user=self.clicker,
-        )
-        self.example_record.save()
-        self.service.save()
-
-        record_request = RecordRequest(
-            domain=self.example_domain,
-            record=self.example_record,
-        )
-
-        result = record_request.can_auto_accept(self.clicker, 'update')
-        self.assertTrue(result)
+        self._test_update(None, self.clicker, True)
 
     def test_ownership_allows_update_when_no_authorisation(self):
         "record_owner=some_dude, ownership=clicker, expected=True"
-        self.example_record.owner = self.some_dude
-        self.example_record.service.owners.clear()
-        self.service = ServiceOwnerFactory(
-            service=self.example_record.service, user=self.clicker,
-        )
-        self.example_record.save()
-        self.service.save()
-
-        record_request = RecordRequest(
-            domain=self.example_domain,
-            record=self.example_record,
-        )
-
-        result = record_request.can_auto_accept(self.clicker, 'update')
-        self.assertTrue(result)
+        self._test_update(self.some_dude, self.clicker, True)
 
     def test_ownership_rejects_update_when_no_both(self):
         "record_owner=some_dude, ownership=some_dude, expected=False"
-        self.example_record.owner = self.some_dude
-        self.example_record.service.owners.clear()
-        self.service = ServiceOwnerFactory(
-            service=self.example_record.service, user=self.some_dude,
-        )
-        self.example_record.save()
-        self.service.save()
-
-        record_request = RecordRequest(
-            domain=self.example_domain,
-            record=self.example_record,
-        )
-
-        result = record_request.can_auto_accept(self.clicker, 'update')
-        self.assertFalse(result)
+        self._test_update(self.some_dude, self.some_dude, False)
