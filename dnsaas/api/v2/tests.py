@@ -882,12 +882,14 @@ class TestUpdateRecordAccessByServiceOwnership(BaseApiTestCase):
     # auth=some_dude, ownership=clicker, expected=True
     # auth=some_dude, ownership=some_dude, expected=False
 
-    def _test_update(self, record_owner, record_ownership, expected):
+    def _test_update(self, domain_owner, record_owner, record_ownership, expected):
+        self.example_domain.owner = domain_owner
         self.example_record.owner = record_owner
         self.example_record.service.owners.clear()
         self.service = ServiceOwnerFactory(
             service=self.example_record.service, user=record_ownership,
         )
+        self.example_domain.save()
         self.example_record.save()
         self.service.save()
 
@@ -902,12 +904,12 @@ class TestUpdateRecordAccessByServiceOwnership(BaseApiTestCase):
 
     def test_ownership_allows_update_when_blank_authorisation(self):
         "record_owner=None, ownership=clicker, expected=True"
-        self._test_update(None, self.clicker, True)
+        self._test_update(self.clicker, None, self.clicker, True)
 
     def test_ownership_allows_update_when_no_authorisation(self):
         "record_owner=some_dude, ownership=clicker, expected=True"
-        self._test_update(self.some_dude, self.clicker, True)
+        self._test_update(self.clicker, self.some_dude, self.clicker, True)
 
     def test_ownership_rejects_update_when_no_both(self):
         "record_owner=some_dude, ownership=some_dude, expected=False"
-        self._test_update(self.some_dude, self.some_dude, False)
+        self._test_update(self.clicker, self.some_dude, self.some_dude, False)
