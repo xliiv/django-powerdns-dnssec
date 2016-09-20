@@ -25,6 +25,36 @@ from powerdns.utils import AutoPtrOptions, RecordLike, flat_dict_diff
 log = logging.getLogger(__name__)
 
 
+def can_auto_accept_record(request, user, action):
+    """
+    Return bool if `request` (RecordRequest or Record DeleteRequest) being
+    done by `user` can be auto accepted for `action`.
+    """
+    def _validate_domain(domain):
+        if not domain:
+            raise Exception(
+                "Can't check auto acceptance without domain set"
+            )
+
+    can_accept = None
+    if action == 'create':
+        _validate_domain(request.domain)
+        can_accept = request.domain.can_auto_accept(user)
+    elif action == 'update':
+        _validate_domain(request.domain)
+        can_accept = (
+            request.domain.can_auto_accept(user) and
+            request.record.can_auto_accept(user)
+        )
+    elif action == 'delete':
+        _validate_domain(request.target.domain)
+        can_accept = (
+            request.target.domain.can_auto_accept(user) and
+            request.target.can_auto_accept(user)
+        )
+    return can_accept
+
+
 class RequestStates(Choices):
     _ = Choices.Choice
     OPEN = _('Open')
@@ -65,24 +95,6 @@ class Request(Owned):
             self.id,
             RequestStates.DescFromID(self.state).lower(),
         ))
-
-    def can_auto_accept(self, user, action):
-        if not self.domain:
-            raise Exception("Can't check auto acceptance without domain set")
-        can_accept = None
-        if action == 'create':
-            can_accept = self.domain.can_auto_accept(user)
-        elif action == 'update':
-            can_accept = (
-                self.domain.can_auto_accept(user) and
-                self.record.can_auto_accept(user)
-            )
-        elif action == 'delete':
-            can_accept = (
-                self.record.domain.can_auto_accept(user) and
-                self.record.can_auto_accept(user)
-            )
-        return can_accept
 
 
 class RequestTypeError(Exception):

@@ -5,7 +5,7 @@ from django.core import mail
 from django.test import TestCase
 
 from powerdns.models.powerdns import Domain, Record
-from powerdns.models.requests import RecordRequest
+from powerdns.models.requests import RecordRequest, can_auto_accept_record
 from powerdns.tests.utils import (
     DomainFactory,
     RecordFactory,
@@ -126,7 +126,9 @@ class TestCreateRecordAccessByServiceOwnership(TestCase):
             record=None,
         )
 
-        result = record_request.can_auto_accept(self.clicker, 'create')
+        result = can_auto_accept_record(
+            record_request, self.clicker, 'create'
+        )
         self.assertEqual(result, expected)
 
     def test_domain_ownership_allows_to_create_new_record_when_blank_auth(
@@ -189,7 +191,9 @@ class TestUpdateRecordAccessByServiceOwnership(TestCase):
             record=self.example_record,
         )
 
-        result = record_request.can_auto_accept(self.clicker, 'update')
+        result = can_auto_accept_record(
+            record_request, self.clicker, 'update'
+        )
         self.assertEqual(result, expected)
 
     def test_ownership_allows_update_when_blank_auth(self):
