@@ -97,22 +97,12 @@ class Request(Owned):
         ))
 
 
-class RequestTypeError(Exception):
-    pass
-
-
 class DeleteRequest(Request):
     """A request for object deletion"""
     content_type = models.ForeignKey(ContentType)
     target_id = models.PositiveIntegerField()
     target = GenericForeignKey('content_type', 'target_id')
     view = 'accept_delete'
-
-    @property
-    def record(self):
-        if self.content_type != ContentType.objects.get_for_model(Record):
-            raise RequestTypeError("This is not record related request")
-        return self.target
 
     @transaction.atomic
     def accept(self):

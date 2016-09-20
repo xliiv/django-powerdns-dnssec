@@ -49,6 +49,8 @@ class ServiceFactory(DjangoModelFactory):
     name = factory.Sequence(lambda n: 'service%d' % n)
     uid = factory.Sequence(lambda n: 'uid%d' % n)
     status = ServiceStatus.ACTIVE
+
+
 class ServiceOwnerFactory(DjangoModelFactory):
     class Meta:
         model = ServiceOwner
