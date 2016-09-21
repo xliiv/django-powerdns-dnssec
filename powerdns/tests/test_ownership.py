@@ -5,7 +5,10 @@ from django.core import mail
 from django.test import TestCase
 
 from powerdns.models.powerdns import Domain, Record
-from powerdns.models.requests import RecordRequest, can_auto_accept_record
+from powerdns.models.requests import (
+    RecordRequest,
+    can_auto_accept_record_request,
+)
 from powerdns.tests.utils import (
     DomainFactory,
     RecordFactory,
@@ -126,7 +129,7 @@ class TestCreateRecordAccessByServiceOwnership(TestCase):
             record=None,
         )
 
-        result = can_auto_accept_record(
+        result = can_auto_accept_record_request(
             record_request, self.clicker, 'create'
         )
         self.assertEqual(result, expected)
@@ -191,7 +194,7 @@ class TestUpdateRecordAccessByServiceOwnership(TestCase):
             record=self.example_record,
         )
 
-        result = can_auto_accept_record(
+        result = can_auto_accept_record_request(
             record_request, self.clicker, 'update'
         )
         self.assertEqual(result, expected)
