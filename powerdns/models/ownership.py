@@ -19,10 +19,7 @@ from powerdns.utils import TimeTrackable
 
 class ServiceStatus(Enum):
     ACTIVE = 'Active'
-    OBSOLETE = 'Obsolete'
-    PENDING_OBSOLESCENCE = 'Pending Obsolescence'
-    PLANNING = 'Planning'
-    PENDING = 'Pending'
+    INACTIVE = 'Inactive'
 
 
 class OwnershipType(Enum):
