@@ -11,9 +11,13 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.RemoveField(
             model_name='service',
             name='status',
-            field=models.CharField(choices=[('ACTIVE', 'Active'), ('INACTIVE', 'Inactive')], max_length=100, db_index=True),
+        ),
+        migrations.AddField(
+            model_name='service',
+            name='is_active',
+            field=models.BooleanField(default=True),
         ),
     ]
