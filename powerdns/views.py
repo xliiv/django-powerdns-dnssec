@@ -1,20 +1,9 @@
 """Views and viewsets for DNSaaS API"""
 import logging
 
-from django.core.urlresolvers import reverse
-from django.shortcuts import redirect
-from django.views.generic.base import TemplateView
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
-
-from powerdns.models import (
-    DeleteRequest,
-    DomainRequest,
-    RecordRequest,
-)
-
-from powerdns.utils import VERSION
 
 
 log = logging.getLogger(__name__)

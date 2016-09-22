@@ -120,60 +120,7 @@ class SubDomainValidator():
         return type(self) == type(other)
 
 
-class WithRequests(models.Model):
-
-    class Meta:
-        abstract = True
-
-    def request_factory(operation):
-        def result(self):
-            def fmt(str_, **kwargs):
-                return str_.format(
-                    obj=type(self)._meta.object_name.lower(),
-                    opr=operation,
-                    **kwargs
-                )
-
-            if get_current_user().has_perm(
-                fmt('powerdns.{opr}_{obj}'),
-                self
-            ):
-                return '<a href={}>{}</a>'.format(
-                    reverse(
-                        fmt('admin-deprecated:powerdns_{obj}_{opr}'),
-                        args=(self.pk,)
-                    ),
-                    operation.capitalize()
-                )
-            if operation == 'delete':
-                return '<a href="{}">Request deletion</a>'.format(
-                    reverse(
-                        fmt('admin-deprecated:powerdns_deleterequest_add')
-                    ) + '?target_id={}&content_type={}'.format(
-                        self.pk,
-                        ContentType.objects.get_for_model(type(self)).pk,
-                    )
-                )
-
-            return '<a href="{}">Request change</a>'.format(
-                reverse(
-                    fmt('admin-deprecated:powerdns_{obj}request_add')
-                ) + '?{}={}'.format(
-                    type(self)._meta.object_name.lower(),
-                    self.pk
-                )
-            )
-        result.allow_tags = True
-        result.__name__ = 'request_' + operation
-        return result
-
-    request_change = request_factory('change')
-    request_deletion = request_factory('delete')
-
-
-class Domain(
-    OwnershipByService, TimeTrackable, Owned, WithRequests
-):
+class Domain(OwnershipByService, TimeTrackable, Owned):
     '''
     PowerDNS domains
     '''
@@ -321,9 +268,7 @@ rules.add_perm('powerdns.change_domain', can_edit)
 rules.add_perm('powerdns.delete_domain', can_delete)
 
 
-class Record(
-    OwnershipByService, TimeTrackable, Owned, RecordLike, WithRequests
-):
+class Record(OwnershipByService, TimeTrackable, Owned, RecordLike):
     '''
     PowerDNS DNS records
     '''
@@ -471,8 +416,6 @@ class Record(
         result.allow_tags = True
         result.__name__ = 'request_' + operation
         return result
-    request_change = request_factory('change')
-    request_deletion = request_factory('delete')
 
     def __str__(self):
         if self.prio is not None:

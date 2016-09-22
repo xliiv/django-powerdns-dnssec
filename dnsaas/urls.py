@@ -22,7 +22,6 @@ admin.autodiscover()
 urlpatterns = patterns(
     '',
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^admin-deprecated/', include(powerdns.admin.admin_site.urls)),
     url(r'^api/', include('dnsaas.api.urls', namespace='api')),
     url(r'^api-token-auth/', obtain_auth_token, name='get-api-token'),
     url(r'^api-docs/', include('rest_framework_swagger.urls')),
