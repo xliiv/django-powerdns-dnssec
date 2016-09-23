@@ -103,6 +103,8 @@ class TestRecordOwnership(TestOwnershipBase):
         self.assertOwner(request, 'user2', mailed=True)
 
 
+#TODO:: add test for missing service too
+
 class TestCreateRecordAccessByServiceOwnership(TestCase):
 
     def setUp(self):
