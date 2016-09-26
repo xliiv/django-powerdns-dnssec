@@ -128,7 +128,6 @@ class TestCreateRecordAccessByServiceOwnership(TestCase):
         )
         self.service.save()
 
-
     def _test_create(self, expected):
         record_request = RecordRequest(
             domain=self.example_domain,
