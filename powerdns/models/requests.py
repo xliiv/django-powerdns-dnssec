@@ -27,8 +27,12 @@ log = logging.getLogger(__name__)
 
 def can_auto_accept_record_request(user_request, user, action):
     """
-    Return bool if `user_request` (RecordRequest or Record DeleteRequest) being
+    Return True if `user_request` (RecordRequest or Record DeleteRequest) being
     done by `user` can be auto accepted for `action`.
+
+    Skipping corner cases (included in code below) this checks:
+        - if user has access to Record AND
+        - if user has access to Domain (which Record belongs to)
     """
     def _validate_domain(domain):
         if not domain:

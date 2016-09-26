@@ -133,7 +133,6 @@ class TestCreateRecordAccessByServiceOwnership(TestCase):
             domain=self.example_domain,
             record=None,
         )
-
         result = can_auto_accept_record_request(
             record_request, self.clicker, 'create'
         )
@@ -152,6 +151,15 @@ class TestCreateRecordAccessByServiceOwnership(TestCase):
         self._set_domain_owner(self.some_dude)
         self._set_owner(self.clicker)
         self._test_create(expected=True)
+
+    def test_no_ownership_when_no_service(
+        self
+    ):
+        self._set_domain_owner(self.some_dude)
+        self._set_owner(self.some_dude)
+        self.example_domain.service = None
+        self.example_domain.save()
+        self._test_create(expected=False)
 
     def test_domain_ownership_rejects_to_create_new_record_when_no_both_perms(
         self
