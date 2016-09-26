@@ -4,13 +4,14 @@ import functools as ft
 
 import factory
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from factory.django import DjangoModelFactory
 from rest_framework.test import APIClient
 
 from powerdns.models.powerdns import Record, Domain
-from powerdns.models.requests import RecordRequest
+from powerdns.models.requests import DeleteRequest, RecordRequest
 from powerdns.models.ownership import ServiceOwner, ServiceStatus, Service
 from powerdns.models.templates import RecordTemplate, DomainTemplate
 from powerdns.utils import AutoPtrOptions
@@ -83,6 +84,14 @@ class RecordRequestFactory(DjangoModelFactory):
     record = factory.SubFactory(RecordFactory)
     domain = factory.SubFactory(DomainFactory)
     owner = factory.SubFactory(UserFactory)
+
+
+class RecordDeleteRequestFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = DeleteRequest
+
+    content_type = ContentType.objects.get_for_model(Record)
+    target = factory.SubFactory(RecordFactory)
 
 
 class RecordTestCase(TestCase):

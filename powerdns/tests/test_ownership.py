@@ -7,10 +7,12 @@ from django.test import TestCase
 from powerdns.models.powerdns import Domain, Record
 from powerdns.models.requests import (
     RecordRequest,
+    RequestStates,
     can_auto_accept_record_request,
 )
 from powerdns.tests.utils import (
     DomainFactory,
+    RecordDeleteRequestFactory,
     RecordFactory,
     ServiceOwnerFactory,
     UserFactory,
@@ -103,8 +105,6 @@ class TestRecordOwnership(TestOwnershipBase):
         self.assertOwner(request, 'user2', mailed=True)
 
 
-#TODO:: add test for missing service too
-
 class TestCreateRecordAccessByServiceOwnership(TestCase):
 
     def setUp(self):
@@ -117,15 +117,19 @@ class TestCreateRecordAccessByServiceOwnership(TestCase):
             auto_ptr=AutoPtrOptions.NEVER,
         )
 
-    def _test_create(self, domain_owner, domain_ownership, expected):
+    def _set_domain_owner(self, domain_owner):
         self.example_domain.owner = domain_owner
+        self.example_domain.save()
+
+    def _set_owner(self, domain_ownership):
         self.example_domain.service.owners.clear()
         self.service = ServiceOwnerFactory(
             service=self.example_domain.service, user=domain_ownership,
         )
-        self.example_domain.save()
         self.service.save()
 
+
+    def _test_create(self, expected):
         record_request = RecordRequest(
             domain=self.example_domain,
             record=None,
@@ -139,29 +143,23 @@ class TestCreateRecordAccessByServiceOwnership(TestCase):
     def test_domain_ownership_allows_to_create_new_record_when_blank_auth(
         self
     ):
-        self._test_create(
-            domain_owner=None,
-            domain_ownership=self.clicker,
-            expected=True
-        )
+        self._set_domain_owner(None)
+        self._set_owner(self.clicker)
+        self._test_create(expected=True)
 
     def test_domain_ownership_allows_to_create_new_record_when_no_auth(
         self
     ):
-        self._test_create(
-            domain_owner=self.some_dude,
-            domain_ownership=self.clicker,
-            expected=True
-        )
+        self._set_domain_owner(self.some_dude)
+        self._set_owner(self.clicker)
+        self._test_create(expected=True)
 
     def test_domain_ownership_rejects_to_create_new_record_when_no_both_perms(
         self
     ):
-        self._test_create(
-            domain_owner=self.some_dude,
-            domain_ownership=self.some_dude,
-            expected=False,
-        )
+        self._set_domain_owner(self.some_dude)
+        self._set_owner(self.some_dude)
+        self._test_create(expected=False)
 
 
 class TestUpdateRecordAccessByServiceOwnership(TestCase):
@@ -220,4 +218,65 @@ class TestUpdateRecordAccessByServiceOwnership(TestCase):
             record_owner=self.some_dude,
             record_ownership=self.some_dude,
             expected=False
+        )
+
+
+class TestDeleteRecordAccessByServiceOwnership(TestCase):
+
+    def setUp(self):
+        self.clicker = UserFactory(username='clicker')
+        self.some_dude = UserFactory(username='some_dude')
+        self.example_domain = DomainFactory(
+            owner=self.clicker,
+            name='example.com',
+            unrestricted=False,
+            auto_ptr=AutoPtrOptions.NEVER,
+        )
+        self.example_record = RecordFactory(
+            domain=self.example_domain,
+            owner=None,
+            type='A',
+            name='example.com',
+            content='192.168.1.0',
+        )
+
+    def _test_delete(self, record_owner, record_ownership, expected):
+        self.example_record.owner = record_owner
+        self.example_record.service.owners.clear()
+        self.service = ServiceOwnerFactory(
+            service=self.example_record.service, user=record_ownership,
+        )
+        self.example_record.save()
+        self.service.save()
+
+        delete_request = RecordDeleteRequestFactory(
+            owner=self.clicker,
+            target=self.example_record,
+            state=RequestStates.OPEN.id,
+        )
+
+        result = can_auto_accept_record_request(
+            delete_request, self.clicker, 'delete'
+        )
+        self.assertEqual(result, expected)
+
+    def test_ownership_allows_delete_when_blank_auth(self):
+        self._test_delete(
+            record_owner=None,
+            record_ownership=self.clicker,
+            expected=True,
+        )
+
+    def test_ownership_allows_delete_when_no_auth(self):
+        self._test_delete(
+            record_owner=self.some_dude,
+            record_ownership=self.clicker,
+            expected=True,
+        )
+
+    def test_ownership_rejects_delete_when_no_both_perms(self):
+        self._test_delete(
+            record_owner=self.some_dude,
+            record_ownership=self.some_dude,
+            expected=False,
         )

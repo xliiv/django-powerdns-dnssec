@@ -36,23 +36,22 @@ def can_auto_accept_record_request(request, user, action):
                 "Can't check auto acceptance without domain set"
             )
 
-    can_accept = False
+    can_auto_accept = False
+    domain = request.domain if action != 'delete' else request.target.domain
+    _validate_domain(domain)
     if action == 'create':
-        _validate_domain(request.domain)
-        can_accept = request.domain.can_auto_accept(user)
+        can_auto_accept = request.domain.can_auto_accept(user)
     elif action == 'update':
-        _validate_domain(request.domain)
-        can_accept = (
+        can_auto_accept = (
             request.domain.can_auto_accept(user) and
             request.record.can_auto_accept(user)
         )
     elif action == 'delete':
-        _validate_domain(request.target.domain)
-        can_accept = (
+        can_auto_accept = (
             request.target.domain.can_auto_accept(user) and
             request.target.can_auto_accept(user)
         )
-    return can_accept
+    return can_auto_accept
 
 
 class RequestStates(Choices):
