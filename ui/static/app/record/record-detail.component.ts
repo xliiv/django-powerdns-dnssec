@@ -18,6 +18,8 @@ import { Record } from "./record";
 import { isLoggedin }  from "../auth/auth.service";
 import "rxjs/add/observable/throw";
 
+declare var $: any;
+
 
 @Component({
   templateUrl: "/static/app/record/record-detail.component.html",
@@ -42,6 +44,8 @@ export class RecordDetailComponent implements OnInit {
     recordName: string = "";
     backUrlParams: {[key: string]: string} = {};
     @ViewChild("inputContent") inputContent;
+    @ViewChild("inputName") inputName;
+
 
     constructor(
       private router: Router,
@@ -85,7 +89,7 @@ export class RecordDetailComponent implements OnInit {
       }
     }
 
-    getDomain() {
+    getDomain(callbackAfterLoad?: Function) {
       if (this.record.domain) {
         this.domainService.getDomainById(
           this.record.domain
@@ -93,6 +97,9 @@ export class RecordDetailComponent implements OnInit {
           (domain) => {
             this.domain = domain;
             this.setRecordName();
+            if (callbackAfterLoad) {
+              callbackAfterLoad();
+            }
           }
         );
       }
@@ -128,6 +135,11 @@ export class RecordDetailComponent implements OnInit {
               );
             }
             else {
+              if (this.isCreate) {
+                this.backUrlParams["showAddRecordMessage"] = "true";
+              } else {
+                this.backUrlParams["showSaveRecordMessage"] = "true";
+              }
               this.onBack();
             }
           },
@@ -177,8 +189,13 @@ export class RecordDetailComponent implements OnInit {
       return () => {
         if (this.isCreate) {
           this.record.type = "A";
+          this.getDomain(() => {
+            this.inputName.nativeElement.disabled = false;
+            $(this.inputName.nativeElement).focus();
+          });
+        } else {
+          this.getDomain();
         }
-        this.getDomain();
       };
     }
 
@@ -190,8 +207,14 @@ export class RecordDetailComponent implements OnInit {
 
     onChangeType() {
       if (this.isCreate) {
-        if (this.record.type === "A" || this.record.type === "MX") {
+        var focusElem = this.inputName.nativeElement;
+        if (this.record.type === "A") {
           this.inputContent.nativeElement.placeholder = "1.2.3.4";
+        } else if (this.record.type === "AAAA") {
+          this.inputContent.nativeElement.placeholder = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
+        } else if (this.record.type === "MX") {
+          this.inputContent.nativeElement.placeholder = "1.2.3.4";
+          focusElem = this.inputContent.nativeElement;
         } else if (this.record.type === "CNAME") {
           this.inputContent.nativeElement.placeholder = "example.com";
         } else if (this.record.type === "TXT") {
@@ -201,6 +224,7 @@ export class RecordDetailComponent implements OnInit {
         } else {
           this.inputContent.nativeElement.placeholder = "";
         }
+        $(focusElem).focus();
       }
     }
 

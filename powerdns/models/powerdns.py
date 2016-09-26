@@ -6,6 +6,7 @@ import time
 import rules
 from dj.choices.fields import ChoiceField
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
@@ -17,6 +18,7 @@ from django.core.urlresolvers import reverse
 from IPy import IP
 from threadlocals.threadlocals import get_current_user
 
+from powerdns.models.ownership import OwnershipByService
 from powerdns.utils import (
     AutoPtrOptions,
     is_authorised,
@@ -138,7 +140,7 @@ class WithRequests(models.Model):
             ):
                 return '<a href={}>{}</a>'.format(
                     reverse(
-                        fmt('admin:powerdns_{obj}_{opr}'),
+                        fmt('admin-deprecated:powerdns_{obj}_{opr}'),
                         args=(self.pk,)
                     ),
                     operation.capitalize()
@@ -146,7 +148,7 @@ class WithRequests(models.Model):
             if operation == 'delete':
                 return '<a href="{}">Request deletion</a>'.format(
                     reverse(
-                        fmt('admin:powerdns_deleterequest_add')
+                        fmt('admin-deprecated:powerdns_deleterequest_add')
                     ) + '?target_id={}&content_type={}'.format(
                         self.pk,
                         ContentType.objects.get_for_model(type(self)).pk,
@@ -155,7 +157,7 @@ class WithRequests(models.Model):
 
             return '<a href="{}">Request change</a>'.format(
                 reverse(
-                    fmt('admin:powerdns_{obj}request_add')
+                    fmt('admin-deprecated:powerdns_{obj}request_add')
                 ) + '?{}={}'.format(
                     type(self)._meta.object_name.lower(),
                     self.pk
@@ -169,7 +171,9 @@ class WithRequests(models.Model):
     request_deletion = request_factory('delete')
 
 
-class Domain(TimeTrackable, Owned, WithRequests):
+class Domain(
+    OwnershipByService, TimeTrackable, Owned, WithRequests
+):
     '''
     PowerDNS domains
     '''
@@ -240,6 +244,14 @@ class Domain(TimeTrackable, Owned, WithRequests):
         verbose_name = _("domain")
         verbose_name_plural = _("domains")
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._original_values = {}
+        fields = [f.name for f in self.__class__._meta.get_fields()]
+        self._original_values = {
+            k: v for k, v in self.__dict__.items() if k in fields
+        }
+
     def __str__(self):
         return self.name
 
@@ -263,7 +275,7 @@ class Domain(TimeTrackable, Owned, WithRequests):
         """Return URL for 'Add record' action"""
         model = 'record' if authorised else 'recordrequest'
         return (
-            reverse('admin:powerdns_{}_add'.format(model)) +
+            reverse('admin-deprecated:powerdns_{}_add'.format(model)) +
             '?domain={}'.format(self.pk)
         )
 
@@ -291,7 +303,7 @@ class Domain(TimeTrackable, Owned, WithRequests):
             user == self.owner or
             user.id in self.authorisations.values_list(
                 'authorised', flat=True
-            )
+            ) or self._has_access_by_service(user)
         )
 
     def as_empty_history(self):
@@ -309,7 +321,9 @@ rules.add_perm('powerdns.change_domain', can_edit)
 rules.add_perm('powerdns.delete_domain', can_delete)
 
 
-class Record(TimeTrackable, Owned, RecordLike, WithRequests):
+class Record(
+    OwnershipByService, TimeTrackable, Owned, RecordLike, WithRequests
+):
     '''
     PowerDNS DNS records
     '''
@@ -330,7 +344,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
                     " domain!"),
     )
     type = models.CharField(
-        _("type"), max_length=6, blank=True, null=True,
+        _("type"), max_length=6, blank=False, null=True,
         choices=RECORD_TYPE, help_text=_("Record qtype"),
     )
     content = models.CharField(
@@ -338,9 +352,9 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
         help_text=_("The 'right hand side' of a DNS record. For an A"
                     " record, this is the IP address"),
     )
-    number = models.PositiveIntegerField(
+    number = models.DecimalField(
         _("IP number"), null=True, blank=True, default=None, editable=False,
-        db_index=True
+        db_index=True, max_digits=39, decimal_places=0
     )
     ttl = models.PositiveIntegerField(
         _("TTL"), blank=True, null=True, default=3600,
@@ -395,6 +409,11 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             'that depend on A records.'
         )
     )
+    delete_request = GenericRelation(
+        'DeleteRequest',
+        content_type_field='content_type',
+        object_id_field='target_id',
+    )
 
     class Meta:
         db_table = u'records'
@@ -426,7 +445,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             ):
                 return '<a href={}>{}</a>'.format(
                     reverse(
-                        fmt('admin:powerdns_{obj}_{opr}'),
+                        fmt('admin-deprecated:powerdns_{obj}_{opr}'),
                         args=(self.pk,)
                     ),
                     operation.capitalize()
@@ -434,7 +453,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             if operation == 'delete':
                 return '<a href="{}">Request deletion</a>'.format(
                     reverse(
-                        fmt('admin:powerdns_deleterequest_add')
+                        fmt('admin-deprecated:powerdns_deleterequest_add')
                     ) + '?target_id={}&content_type={}'.format(
                         self.pk,
                         ContentType.objects.get_for_model(type(self)).pk,
@@ -443,7 +462,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
 
             return '<a href="{}">Request change</a>'.format(
                 reverse(
-                    fmt('admin:powerdns_{obj}request_add')
+                    fmt('admin-deprecated:powerdns_{obj}request_add')
                 ) + '?{}={}'.format(
                     type(self)._meta.object_name.lower(),
                     self.pk
@@ -612,7 +631,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             user == self.owner or
             user.id in self.authorisations.values_list(
                 'authorised', flat=True
-            )
+            ) or self._has_access_by_service(user)
         )
 
     def as_empty_history(self):
@@ -637,6 +656,7 @@ class Record(TimeTrackable, Owned, RecordLike, WithRequests):
             'type':  self.type or '',
         }
 
+
 rules.add_perm('powerdns.add_record', rules.is_authenticated)
 rules.add_perm('powerdns.change_record', rules.is_authenticated)
 rules.add_perm('powerdns.delete_record', rules.is_authenticated)
@@ -651,23 +671,32 @@ def update_serial(sender, instance, **kwargs):
         soa.save()
 
 
+def _update_records_ptrs(domain):
+    records = Record.objects.filter(domain=domain, type='A')
+    for record in records:
+        _create_ptr(record)
+
+
 @receiver(post_save, sender=Domain, dispatch_uid='domain_update_ptr')
 def update_ptr(sender, instance, **kwargs):
-    records = Record.objects.filter(domain=instance)
-    for record in records:
-        # recall signals on Record
-        record.save(force_update=True)
+    if instance._original_values['auto_ptr'] == instance.auto_ptr:
+        return
+    _update_records_ptrs(instance)
+
+
+def _create_ptr(record):
+    if (
+        record.domain.auto_ptr == AutoPtrOptions.NEVER or
+        record.type != 'A'
+    ):
+        record.delete_ptr()
+        return
+    record.create_ptr()
 
 
 @receiver(post_save, sender=Record, dispatch_uid='record_create_ptr')
 def create_ptr(sender, instance, **kwargs):
-    if (
-        instance.domain.auto_ptr == AutoPtrOptions.NEVER or
-        instance.type != 'A'
-    ):
-        instance.delete_ptr()
-        return
-    instance.create_ptr()
+    _create_ptr(instance)
 
 
 class SuperMaster(TimeTrackable):

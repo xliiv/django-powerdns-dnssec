@@ -2,7 +2,7 @@
 
 import logging
 
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django_extensions.db.fields.json import JSONField
@@ -23,6 +23,42 @@ from powerdns.utils import AutoPtrOptions, RecordLike, flat_dict_diff
 
 
 log = logging.getLogger(__name__)
+
+
+def can_auto_accept_record_request(user_request, user, action):
+    """
+    Return True if `user_request` (RecordRequest or Record DeleteRequest) being
+    done by `user` can be auto accepted for `action`.
+
+    Skipping corner cases (included in code below) this checks:
+        - if user has access to Record AND
+        - if user has access to Domain (which Record belongs to)
+    """
+    def _validate_domain(domain):
+        if not domain:
+            raise Exception(
+                "Can't check auto acceptance without domain set"
+            )
+
+    can_auto_accept = False
+    domain = (
+        user_request.domain
+        if action != 'delete' else user_request.target.domain
+    )
+    _validate_domain(domain)
+    if action == 'create':
+        can_auto_accept = user_request.domain.can_auto_accept(user)
+    elif action == 'update':
+        can_auto_accept = (
+            user_request.domain.can_auto_accept(user) and
+            user_request.record.can_auto_accept(user)
+        )
+    elif action == 'delete':
+        can_auto_accept = (
+            user_request.target.domain.can_auto_accept(user) and
+            user_request.target.can_auto_accept(user)
+        )
+    return can_auto_accept
 
 
 class RequestStates(Choices):
@@ -49,11 +85,6 @@ class Request(Owned):
     )
     last_change_json = JSONField(null=True, blank=True)
 
-    def reject(self):
-        """Reject the request"""
-        self.state = RequestStates.REJECTED
-        self.save()
-
     def extra_buttons(self):
         perm = 'change_' + self._meta.model_name.lower()
         if get_current_user().has_perm(perm, self):
@@ -64,6 +95,13 @@ class Request(Owned):
             self.owner = get_current_user()
         super().save(*args, **kwargs)
 
+    def _log_processed_request_message(self):
+        log.warning('{} (id:{}) already {}'.format(
+            self._meta.object_name,
+            self.id,
+            RequestStates.DescFromID(self.state).lower(),
+        ))
+
 
 class DeleteRequest(Request):
     """A request for object deletion"""
@@ -72,7 +110,12 @@ class DeleteRequest(Request):
     target = GenericForeignKey('content_type', 'target_id')
     view = 'accept_delete'
 
+    @transaction.atomic
     def accept(self):
+        if self.state != RequestStates.OPEN:
+            self._log_processed_request_message()
+            return
+
         old_dict = self.target.as_history_dump()
         new_dict = self.target.as_empty_history()
         result = flat_dict_diff(old_dict, new_dict)
@@ -83,8 +126,12 @@ class DeleteRequest(Request):
         self.state = RequestStates.ACCEPTED
         self.save()
 
+    @transaction.atomic
     def reject(self):
         """Reject the request"""
+        if self.state != RequestStates.OPEN:
+            self._log_processed_request_message()
+            return
         self.state = RequestStates.REJECTED
         self.save()
 
@@ -119,8 +166,13 @@ class ChangeCreateRequest(Request):
     def _set_json_history(self, object_):
         self.last_change_json = self._get_json_history(object_)
 
+    @transaction.atomic
     def accept(self):
         object_ = self.get_object()
+        if self.state != RequestStates.OPEN:
+            self._log_processed_request_message()
+            return object_
+
         self._set_json_history(object_)
         for field_name in type(self).copy_fields:
             if field_name in self.ignore_fields:
@@ -138,8 +190,12 @@ class ChangeCreateRequest(Request):
         self.save()
         return object_
 
+    @transaction.atomic
     def reject(self):
         """Reject the request"""
+        if self.state != RequestStates.OPEN:
+            self._log_processed_request_message()
+            return
         object_ = self.get_object()
         self._set_json_history(object_)
         self.state = RequestStates.REJECTED
