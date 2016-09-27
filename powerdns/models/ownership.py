@@ -17,14 +17,6 @@ from django.utils.translation import ugettext_lazy as _
 from powerdns.utils import TimeTrackable
 
 
-class ServiceStatus(Enum):
-    ACTIVE = 'Active'
-    OBSOLETE = 'Obsolete'
-    PENDING_OBSOLESCENCE = 'Pending Obsolescence'
-    PLANNING = 'Planning'
-    PENDING = 'Pending'
-
-
 class OwnershipType(Enum):
     BO = 'Business Owner'
     TO = 'Technical Owner'
@@ -33,16 +25,13 @@ class OwnershipType(Enum):
 class Service(TimeTrackable):
     name = models.CharField(_("name"), max_length=255)
     uid = models.CharField(max_length=100, unique=True, db_index=True)
-    status = models.CharField(
-        max_length=100, db_index=True,
-        choices=[(status.name, status.value) for status in ServiceStatus]
-    )
+    is_active = models.BooleanField(null=False, default=True)
     owners = models.ManyToManyField(
         settings.AUTH_USER_MODEL, through='ServiceOwner'
     )
 
     def __str__(self):
-        return '{} {} ({})'.format(self.name, self.status, self.uid)
+        return '{} {} ({})'.format(self.name, self.is_active, self.uid)
 
 
 class ServiceOwner(TimeTrackable):
@@ -65,3 +54,13 @@ class OwnershipByService(models.Model):
         abstract = True
 
     service = models.ForeignKey(Service, blank=True, null=True)
+
+    def _has_access_by_service(self, user):
+        "Check if user is one of owners of service assigned to this model."
+        if self.service:
+            permission_by_service = (
+                user.id in self.service.owners.values_list('id', flat=True)
+            )
+        else:
+            permission_by_service = False
+        return permission_by_service

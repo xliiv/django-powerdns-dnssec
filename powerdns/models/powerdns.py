@@ -223,7 +223,7 @@ class Domain(OwnershipByService, TimeTrackable, Owned):
             user == self.owner or
             user.id in self.authorisations.values_list(
                 'authorised', flat=True
-            )
+            ) or self._has_access_by_service(user)
         )
 
     def as_empty_history(self):
@@ -502,7 +502,7 @@ class Record(OwnershipByService, TimeTrackable, Owned, RecordLike):
             user == self.owner or
             user.id in self.authorisations.values_list(
                 'authorised', flat=True
-            )
+            ) or self._has_access_by_service(user)
         )
 
     def as_empty_history(self):
