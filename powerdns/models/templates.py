@@ -53,20 +53,6 @@ class DomainTemplate(models.Model):
     def natural_key(self):
         return (self.name,)
 
-    def add_domain_url(self):
-        """Return URL for 'Add domain' action"""
-        return (
-            reverse('admin-deprecated:powerdns_domain_add') +
-            '?template={}'.format(self.pk)
-        )
-
-    def add_domain_link(self):
-        return '<a href="{}">Create domain</a>'.format(self.add_domain_url())
-    add_domain_link.allow_tags = True
-
-    def extra_buttons(self):
-        yield (self.add_domain_url(), 'Create domain')
-
 
 class RecordTemplateManager(models.Manager):
     def get_by_natural_key(self, domain_name, type, name, content):
