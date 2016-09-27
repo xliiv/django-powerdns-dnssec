@@ -3,7 +3,6 @@ from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from django.conf import settings
 
-import powerdns
 from powerdns.utils import VERSION
 from powerdns.views import obtain_auth_token
 from ui.views import start_page
