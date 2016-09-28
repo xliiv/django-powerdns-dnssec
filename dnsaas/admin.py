@@ -172,9 +172,12 @@ class DomainTemplateAdmin(ForeignKeyAutocompleteAdmin):
 
 
 class ReadonlyAdminMixin(object):
-    def __init__(self, *args, **kwargs):
-        self.readonly_fields = self.model._meta.get_all_field_names()
-        super().__init__(*args, **kwargs)
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly_fields = []
+        for field in self.model._meta.fields:
+            readonly_fields.append(field.name)
+        return readonly_fields
 
     def has_add_permission(self, request, obj=None):
         return False
