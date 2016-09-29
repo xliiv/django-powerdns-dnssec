@@ -3,7 +3,6 @@ from django.contrib.admin import SimpleListFilter
 from django.contrib.admin.widgets import AdminRadioSelect
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.forms import NullBooleanSelect
 from powerdns.models.requests import (
@@ -175,9 +174,6 @@ class DomainTemplateAdmin(ForeignKeyAutocompleteAdmin):
 
 
 class ReadonlyAdminMixin(object):
-    """
-    Note: This doesn't work for GenericRelation
-    """
     def get_readonly_fields(self, request, obj=None):
         ro_fields = (
             self.fields if not self.readonly_fields else self.readonly_fields
