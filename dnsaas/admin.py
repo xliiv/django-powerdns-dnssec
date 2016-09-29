@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.contrib.admin import SimpleListFilter
 from django.contrib.admin.widgets import AdminRadioSelect
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.forms import NullBooleanSelect
 from powerdns.models.requests import (
@@ -172,12 +175,16 @@ class DomainTemplateAdmin(ForeignKeyAutocompleteAdmin):
 
 
 class ReadonlyAdminMixin(object):
-
+    """
+    Note: This doesn't work for GenericRelation
+    """
     def get_readonly_fields(self, request, obj=None):
-        readonly_fields = []
-        for field in self.model._meta.fields:
-            readonly_fields.append(field.name)
-        return readonly_fields
+        if not self.readonly_fields:
+            self.readonly_fields = [
+                f.name for f in self.model._meta.get_fields()
+                if not isinstance(f, GenericRelation)
+            ]
+        return self.readonly_fields
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -215,6 +222,13 @@ class ServiceAdmin(admin.ModelAdmin):
 @admin.register(ServiceOwner)
 class ServiceOwnerAdmin(admin.ModelAdmin):
     raw_id_fields = ("service", 'user')
+
+
+# walkaround long load of user change_view until autocomplete-light3 gets
+# integrated
+UserAdmin.filter_horizontal = ()
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)
 
 
 admin.site.register(Domain, DomainAdmin)
