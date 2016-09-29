@@ -179,12 +179,10 @@ class ReadonlyAdminMixin(object):
     Note: This doesn't work for GenericRelation
     """
     def get_readonly_fields(self, request, obj=None):
-        if not self.readonly_fields:
-            self.readonly_fields = [
-                f.name for f in self.model._meta.get_fields()
-                if not isinstance(f, GenericRelation)
-            ]
-        return self.readonly_fields
+        ro_fields = (
+            self.fields if not self.readonly_fields else self.readonly_fields
+        )
+        return ro_fields
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -201,11 +199,44 @@ class DeleteRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
 class DomainRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
     model = DomainRequest
     list_display = ['domain']
+    fields = [
+        'domain',
+        'key',
+        'last_change_json',
+        'parent_domain',
+        'state',
+        'target_account',
+        'target_auto_ptr',
+        'target_master',
+        'target_name',
+        'target_owner',
+        'target_remarks',
+        'target_reverse_template',
+        'target_template',
+        'target_type',
+        'target_unrestricted',
+    ]
 
 
 class RecordRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
     model = RecordRequest
     list_display = ['target_' + field for field in RECORD_LIST_FIELDS]
+    fields = [
+        'domain',
+        'key',
+        'last_change_json',
+        'record',
+        'state',
+        'target_auth',
+        'target_content',
+        'target_disabled',
+        'target_name',
+        'target_owner',
+        'target_prio',
+        'target_remarks',
+        'target_ttl',
+        'target_type',
+    ]
 
 
 class OwnerInline(admin.TabularInline):
