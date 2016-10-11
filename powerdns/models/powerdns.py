@@ -486,7 +486,15 @@ class Record(OwnershipByService, TimeTrackable, Owned, RecordLike):
             return get_ptr_obj(self.content, self.name)
 
     def _delete_old_ptr(self):
-        #TODO:: docstring
+        """
+        Delete PTR for A/AAAA record when `name` or `content` was updated.
+
+        This fn. works for case where `record.name` or `record.content` has
+        changed and record A (or AAAA) is already matched with PTR.
+        In such case looking for PTR depending on current record `name` or
+        `content` fails (PTR was created for values which are updated now).
+        To fix that PTR should be query by values before the update.
+        """
         if (
             # delete old PTR, when content or name has changed
             self._original_values['content'] != self.content or
