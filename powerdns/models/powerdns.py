@@ -55,6 +55,19 @@ can_edit = rules.is_superuser | no_object | is_owner | is_authorised
 can_delete = rules.is_superuser | is_owner | is_authorised
 
 
+def get_ptr_obj(ip, content):
+    """Return PTR object for `ip` and `content` or None"""
+    ptr = None
+    rev_ptr = reverse_pointer(ip)
+    try:
+        ptr = Record.objects.get(
+            type='PTR', name=rev_ptr, content=content,
+        )
+    except Record.DoesNotExist:
+        pass
+    return ptr
+
+
 def get_default_reverse_domain():
     """Returns a default reverse domain."""
     from powerdns.models.templates import DomainTemplate
@@ -191,6 +204,7 @@ class Domain(OwnershipByService, TimeTrackable, Owned):
         verbose_name_plural = _("domains")
 
     def __init__(self, *args, **kwargs):
+        #TODO:: mixin?
         super().__init__(*args, **kwargs)
         self._original_values = {}
         fields = [f.name for f in self.__class__._meta.get_fields()]
@@ -246,6 +260,14 @@ class Record(OwnershipByService, TimeTrackable, Owned, RecordLike):
     '''
     PowerDNS DNS records
     '''
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._original_values = {}
+        fields = [f.name for f in self.__class__._meta.get_fields()]
+        self._original_values = {
+            k: v for k, v in self.__dict__.items() if k in fields
+        }
+
     prefix = ''
     RECORD_TYPE = [(r, r) for r in RECORD_TYPES]
     domain = models.ForeignKey(
@@ -459,26 +481,40 @@ class Record(OwnershipByService, TimeTrackable, Owned, RecordLike):
         super(Record, self).save(*args, **kwargs)
 
     def get_ptr(self):
-        #return Record.objects.filter(depends_on=self).delete()
-        ptr = None
-        if self.type == 'A':
-            rev_ptr = reverse_pointer(self.content)
-            try:
-                ptr = Record.objects.get(
-                    type='PTR', name=rev_ptr, content=self.name,
-                )
-            except Record.DoesNotExist:
-                pass
-        return ptr
+        """Get PTR for `self` record if record is A or AAAA type."""
+        if self.type in {'A', 'AAAA'}:
+            return get_ptr_obj(self.content, self.name)
+
+    def _delete_old_ptr(self):
+        #TODO:: docstring
+        if (
+            # delete old PTR, when content or name has changed
+            self._original_values['content'] != self.content or
+            self._original_values['name'] != self.name and
+            (
+                self._original_values['content'] and
+                self._original_values['name']
+            )
+        ):
+            old_ptr = get_ptr_obj(
+                self._original_values['content'],
+                self._original_values['name']
+            )
+            if old_ptr:
+                old_ptr.delete()
+
 
     def delete_ptr(self):
-        print(self.remarks)
-        #TODO:: what about record changes where fields type, content, name changed
-            #TODO:: rm both ptr for old record and for new record (when editing)?
-        ptr = self.get_ptr()
-        if ptr:
-            ptr.delete()
+        """
+        Delete ptr for `self` if exists
+        """
+        if self.type not in {'A', 'AAAA'}:
+            return
 
+        self._delete_old_ptr()
+        current_ptr = self.get_ptr()
+        if current_ptr:
+            current_ptr.delete()
 
     def create_ptr(self):
         """Creates a PTR record for A record creating a domain if necessary."""
@@ -578,7 +614,7 @@ def update_ptr(sender, instance, **kwargs):
 def _create_ptr(record):
     if (
         record.domain.auto_ptr == AutoPtrOptions.NEVER or
-        record.type != 'A'
+        record.type not in {'A', 'AAAA'}
     ):
         record.delete_ptr()
         return

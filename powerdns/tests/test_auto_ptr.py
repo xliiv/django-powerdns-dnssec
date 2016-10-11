@@ -98,7 +98,10 @@ class TestAutoPtr(TestCase):
             content='192.168.1.1',
         )
         record.content = '192.168.1.9'
+
         record.save()
+
+
         domain = Domain.objects.get(name='1.168.192.in-addr.arpa')
         assert_does_exist(
             Record,
@@ -110,28 +113,6 @@ class TestAutoPtr(TestCase):
             domain=domain,
             name='1.1.168.192.in-addr.arpa',
         )
-
-    #TODO: def update_works_ok_when_depends_on_empty(self):
-    def test_ipv4_ptr_is_removed_when_depends_on_is_empty(self):
-        #TODO: also works for ipv6?
-        record = RecordFactory(
-            domain=self.ptr_domain,
-            type='A',
-            name='site.example.com',
-            content='192.168.1.1',
-            owner=self.user,
-            remarks='remove-unmatched-ptr',
-        )
-        ptr_for_record = Record.objects.get(depends_on=record)
-        ptr_for_record.depends_on = None
-        ptr_for_record.save()
-        self.assertFalse(Record.objects.filter(depends_on=record))
-
-        record.delete_ptr()
-        record.save()
-
-        self.assertTrue(Record.objects.filter(depends_on=record))
-
 
     def test_record_update_wont_create_auto_ptr_when_never_set(self):
         record = RecordFactory(
