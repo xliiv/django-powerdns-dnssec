@@ -457,8 +457,30 @@ class Record(OwnershipByService, TimeTrackable, Owned, RecordLike):
             self.number = IP(self.content).int()
         super(Record, self).save(*args, **kwargs)
 
+    def get_ptr(self):
+        ptr = None
+        if self.type == 'A':
+            reversed_ip = '.'.join(reversed(self.content.split('.')))
+            ptr_name = reversed_ip + '.in-addr.arpa'
+            try:
+                ptr = Record.objects.get(
+                    type='PTR',
+                    name=ptr_name,
+                    content=self.name,
+                )
+            except Record.DoesNotExist:
+                pass
+        #TODO:: if self.type == 'AAAA':
+        return ptr
+
     def delete_ptr(self):
-        Record.objects.filter(depends_on=self).delete()
+        print(self.remarks)
+        #TODO:: what about record changes where fields type, content, name changed
+            #TODO:: rm both ptr for old record and for new record (when editing)?
+        ptr = self.get_ptr()
+        if ptr:
+            ptr.delete()
+
 
     def create_ptr(self):
         """Creates a PTR record for A record creating a domain if necessary."""
