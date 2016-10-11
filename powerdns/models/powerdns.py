@@ -26,6 +26,7 @@ from powerdns.utils import (
     RecordLike,
     TimeTrackable,
     to_reverse,
+    reverse_pointer,
     validate_domain_name,
 )
 
@@ -458,19 +459,16 @@ class Record(OwnershipByService, TimeTrackable, Owned, RecordLike):
         super(Record, self).save(*args, **kwargs)
 
     def get_ptr(self):
+        #return Record.objects.filter(depends_on=self).delete()
         ptr = None
         if self.type == 'A':
-            reversed_ip = '.'.join(reversed(self.content.split('.')))
-            ptr_name = reversed_ip + '.in-addr.arpa'
+            rev_ptr = reverse_pointer(self.content)
             try:
                 ptr = Record.objects.get(
-                    type='PTR',
-                    name=ptr_name,
-                    content=self.name,
+                    type='PTR', name=rev_ptr, content=self.name,
                 )
             except Record.DoesNotExist:
                 pass
-        #TODO:: if self.type == 'AAAA':
         return ptr
 
     def delete_ptr(self):
