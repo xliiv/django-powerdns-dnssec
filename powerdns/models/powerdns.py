@@ -55,6 +55,18 @@ can_edit = rules.is_superuser | no_object | is_owner | is_authorised
 can_delete = rules.is_superuser | is_owner | is_authorised
 
 
+class PreviousStateMixin(models.Model):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        fields = [f.name for f in self._meta.get_fields()]
+        self._original_values = {
+            k: v for k, v in self.__dict__.items() if k in fields
+        }
+
+    class Meta:
+        abstract = True
+
+
 def get_ptr_obj(ip, content):
     """Return PTR object for `ip` and `content` or None"""
     ptr = None
@@ -132,7 +144,7 @@ class SubDomainValidator():
         return type(self) == type(other)
 
 
-class Domain(OwnershipByService, TimeTrackable, Owned):
+class Domain(PreviousStateMixin, OwnershipByService, TimeTrackable, Owned):
     '''
     PowerDNS domains
     '''
@@ -203,15 +215,6 @@ class Domain(OwnershipByService, TimeTrackable, Owned):
         verbose_name = _("domain")
         verbose_name_plural = _("domains")
 
-    def __init__(self, *args, **kwargs):
-        #TODO:: mixin?
-        super().__init__(*args, **kwargs)
-        self._original_values = {}
-        fields = [f.name for f in self.__class__._meta.get_fields()]
-        self._original_values = {
-            k: v for k, v in self.__dict__.items() if k in fields
-        }
-
     def __str__(self):
         return self.name
 
@@ -256,18 +259,12 @@ rules.add_perm('powerdns.change_domain', can_edit)
 rules.add_perm('powerdns.delete_domain', can_delete)
 
 
-class Record(OwnershipByService, TimeTrackable, Owned, RecordLike):
+class Record(
+    PreviousStateMixin, OwnershipByService, TimeTrackable, Owned, RecordLike
+):
     '''
     PowerDNS DNS records
     '''
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._original_values = {}
-        fields = [f.name for f in self.__class__._meta.get_fields()]
-        self._original_values = {
-            k: v for k, v in self.__dict__.items() if k in fields
-        }
-
     prefix = ''
     RECORD_TYPE = [(r, r) for r in RECORD_TYPES]
     domain = models.ForeignKey(
@@ -510,7 +507,6 @@ class Record(OwnershipByService, TimeTrackable, Owned, RecordLike):
             )
             if old_ptr:
                 old_ptr.delete()
-
 
     def delete_ptr(self):
         """

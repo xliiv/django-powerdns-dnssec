@@ -98,10 +98,7 @@ class TestAutoPtr(TestCase):
             content='192.168.1.1',
         )
         record.content = '192.168.1.9'
-
         record.save()
-
-
         domain = Domain.objects.get(name='1.168.192.in-addr.arpa')
         assert_does_exist(
             Record,
