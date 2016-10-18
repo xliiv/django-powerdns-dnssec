@@ -46,11 +46,15 @@ def can_auto_accept_record_request(user_request, user, action):
     )
     _validate_domain(domain)
     if action == 'create':
-        can_auto_accept = user_request.domain.can_auto_accept(user)
+        can_auto_accept = (
+            user_request.domain.can_auto_accept(user) and
+            not user_request.is_sec_acceptance_required()
+        )
     elif action == 'update':
         can_auto_accept = (
             user_request.domain.can_auto_accept(user) and
-            user_request.record.can_auto_accept(user)
+            user_request.record.can_auto_accept(user) and
+            not user_request.is_sec_acceptance_required()
         )
     elif action == 'delete':
         can_auto_accept = (
@@ -445,6 +449,20 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
             'ttl':  self.target_ttl or '',
             'type':  self.target_type or '',
         }
+
+    def is_sec_acceptance_required(self):
+        """
+        Check if record request requires SEC acceptance.
+        """
+        return (
+            not self.owner.is_superuser and
+            self.target_type in {'A', 'AAAA'} and
+            (
+                not self.domain.template or
+                self.domain.template.is_public_domain
+            ) and
+            self.domain.acceptance.require_sec_acceptance
+        )
 
 
 rules.add_perm('powerdns.add_recordrequest', rules.is_authenticated)

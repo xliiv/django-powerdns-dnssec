@@ -559,8 +559,9 @@ class Record(
         )
 
     def can_auto_accept(self, user):
+        if user.is_superuser:
+            return True
         return (
-            user.is_superuser or
             user == self.owner or
             user.id in self.authorisations.values_list(
                 'authorised', flat=True
@@ -666,6 +667,25 @@ class DomainMetadata(TimeTrackable):
 
     def __str__(self):
         return str(self.domain)
+
+
+class DomainAcceptance(models.Model):
+    domain = models.OneToOneField(
+        Domain,
+        primary_key=True,
+        related_name='acceptance',
+        on_delete=models.CASCADE,
+    )
+    require_sec_acceptance = models.BooleanField(
+        null=False,
+        default=False,
+        help_text="""Do new A records require security acceptance"""
+    )
+    require_seo_acceptance = models.BooleanField(
+        null=False,
+        default=False,
+        help_text="""Does deleting A records require SEO acceptance"""
+    )
 
 
 class CryptoKey(TimeTrackable):
