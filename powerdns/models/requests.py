@@ -59,7 +59,8 @@ def can_auto_accept_record_request(user_request, user, action):
     elif action == 'delete':
         can_auto_accept = (
             user_request.target.domain.can_auto_accept(user) and
-            user_request.target.can_auto_accept(user)
+            user_request.target.can_auto_accept(user) and
+            not user_request.is_seo_acceptance_required()
         )
     return can_auto_accept
 
@@ -134,6 +135,21 @@ class DeleteRequest(Request):
 
     def __str__(self):
         return 'Delete {}'.format(self.target)
+
+    def is_seo_acceptance_required(self):
+        """
+        Check if delete request requires SEO acceptance.
+        """
+        return (
+            not self.owner.is_superuser and
+            isinstance(self.target, Record) and
+            self.target.type in {'A', 'AAAA', 'CNAME'} and
+            (
+                not self.target.domain.template or
+                self.target.domain.template.is_public_domain
+            ) and
+            self.target.domain.acceptance.require_seo_acceptance
+        )
 
 
 rules.add_perm('powerdns.add_deleterequest', rules.is_authenticated)
@@ -454,8 +470,9 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
         """
         Check if record request requires SEC acceptance.
         """
+        if self.owner and self.owner.is_superuser:
+            return False
         return (
-            not self.owner.is_superuser and
             self.target_type in {'A', 'AAAA'} and
             (
                 not self.domain.template or

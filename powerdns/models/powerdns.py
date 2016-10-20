@@ -559,9 +559,8 @@ class Record(
         )
 
     def can_auto_accept(self, user):
-        if user.is_superuser:
-            return True
         return (
+            user.is_superuser or
             user == self.owner or
             user.id in self.authorisations.values_list(
                 'authorised', flat=True
@@ -616,6 +615,19 @@ def update_ptr(sender, instance, **kwargs):
     if instance._original_values['auto_ptr'] == instance.auto_ptr:
         return
     _update_records_ptrs(instance)
+
+
+@receiver(post_save, sender=Domain, dispatch_uid='create_acceptance')
+def create_acceptance(sender, instance, **kwargs):
+    """
+    Create relation between `Domain` and `DomainAcceptance`
+    """
+    try:
+        instance.acceptance
+    except DomainAcceptance.DoesNotExist:
+        instance.acceptance = DomainAcceptance.objects.create(
+            domain=instance
+        )
 
 
 def _create_ptr(record):
