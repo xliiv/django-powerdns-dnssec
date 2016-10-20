@@ -140,8 +140,9 @@ class DeleteRequest(Request):
         """
         Check if delete request requires SEO acceptance.
         """
+        if self.owner and self.owner.is_superuser:
+            return False
         return (
-            not self.owner.is_superuser and
             isinstance(self.target, Record) and
             self.target.type in {'A', 'AAAA', 'CNAME'} and
             (
