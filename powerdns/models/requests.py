@@ -144,7 +144,7 @@ class DeleteRequest(Request):
             return False
         return (
             isinstance(self.target, Record) and
-            self.target.type in {'A', 'AAAA', 'CNAME'} and
+            self.target.type in settings.SEO_ACCEPTANCE_FOR_RECORD_TYPE and
             (
                 not self.target.domain.template or
                 self.target.domain.template.is_public_domain
@@ -474,7 +474,7 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
         if self.owner and self.owner.is_superuser:
             return False
         return (
-            self.target_type in {'A', 'AAAA'} and
+            self.target_type in settings.SEC_ACCEPTANCE_FOR_RECORD_TYPE and
             (
                 not self.domain.template or
                 self.domain.template.is_public_domain
