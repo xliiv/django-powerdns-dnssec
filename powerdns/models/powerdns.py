@@ -210,6 +210,18 @@ class Domain(PreviousStateMixin, OwnershipByService, TimeTrackable, Owned):
         )
     )
 
+    require_sec_acceptance = models.BooleanField(
+        null=False,
+        default=False,
+        help_text="""Do new A records require security acceptance"""
+    )
+
+    require_seo_acceptance = models.BooleanField(
+        null=False,
+        default=False,
+        help_text="""Does deleting A records require SEO acceptance"""
+    )
+
     class Meta:
         db_table = u'domains'
         verbose_name = _("domain")
@@ -617,19 +629,6 @@ def update_ptr(sender, instance, **kwargs):
     _update_records_ptrs(instance)
 
 
-@receiver(post_save, sender=Domain, dispatch_uid='create_acceptance')
-def create_acceptance(sender, instance, **kwargs):
-    """
-    Create relation between `Domain` and `DomainAcceptance`
-    """
-    try:
-        instance.acceptance
-    except DomainAcceptance.DoesNotExist:
-        instance.acceptance = DomainAcceptance.objects.create(
-            domain=instance
-        )
-
-
 def _create_ptr(record):
     if (
         record.domain.auto_ptr == AutoPtrOptions.NEVER or
@@ -679,25 +678,6 @@ class DomainMetadata(TimeTrackable):
 
     def __str__(self):
         return str(self.domain)
-
-
-class DomainAcceptance(models.Model):
-    domain = models.OneToOneField(
-        Domain,
-        primary_key=True,
-        related_name='acceptance',
-        on_delete=models.CASCADE,
-    )
-    require_sec_acceptance = models.BooleanField(
-        null=False,
-        default=False,
-        help_text="""Do new A records require security acceptance"""
-    )
-    require_seo_acceptance = models.BooleanField(
-        null=False,
-        default=False,
-        help_text="""Does deleting A records require SEO acceptance"""
-    )
 
 
 class CryptoKey(TimeTrackable):

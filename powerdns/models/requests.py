@@ -149,7 +149,7 @@ class DeleteRequest(Request):
                 not self.target.domain.template or
                 self.target.domain.template.is_public_domain
             ) and
-            self.target.domain.acceptance.require_seo_acceptance
+            self.target.domain.require_seo_acceptance
         )
 
 
@@ -479,7 +479,7 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
                 not self.domain.template or
                 self.domain.template.is_public_domain
             ) and
-            self.domain.acceptance.require_sec_acceptance
+            self.domain.require_sec_acceptance
         )
 
 
