@@ -210,7 +210,7 @@ class Domain(PreviousStateMixin, OwnershipByService, TimeTrackable, Owned):
             "to it without owner's permission?"
         )
     )
-    owners = models.ManyToManyField(
+    direct_owners = models.ManyToManyField(
         settings.AUTH_USER_MODEL, through='DomainOwner',
         related_name='domain_owners'
     )
@@ -257,9 +257,9 @@ class Domain(PreviousStateMixin, OwnershipByService, TimeTrackable, Owned):
         """We don't care about domain history for now"""
         return {}
 
-    def all_owners(self):
-        """Return queryset of all owners (regular and by service)"""
-        return (self.owners.all() | self.service.owners.all())
+    def owners(self):
+        """Return queryset of all owners (direct and by service)"""
+        return (self.direct_owners.all() | self.service.owners.all())
 
 
 class DomainOwner(models.Model):
