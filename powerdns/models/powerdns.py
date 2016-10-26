@@ -257,6 +257,7 @@ class Domain(PreviousStateMixin, OwnershipByService, TimeTrackable, Owned):
         """We don't care about domain history for now"""
         return {}
 
+    @property
     def owners(self):
         """Return queryset of all owners (direct and by service)"""
         return (self.direct_owners.all() | self.service.owners.all())
