@@ -210,6 +210,10 @@ class Domain(PreviousStateMixin, OwnershipByService, TimeTrackable, Owned):
             "to it without owner's permission?"
         )
     )
+    owners = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, through='DomainOwner',
+        related_name='domain_owners'
+    )
 
     class Meta:
         db_table = u'domains'
@@ -253,10 +257,14 @@ class Domain(PreviousStateMixin, OwnershipByService, TimeTrackable, Owned):
         """We don't care about domain history for now"""
         return {}
 
+    def all_owners(self):
+        """Get regular domain owners plus owners by service"""
+        return self.owners + self.service.owners
 
-class DomainOwnership(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+
+class DomainOwner(models.Model):
     domain = models.ForeignKey(Domain)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL)
     ownership_type = models.CharField(
         max_length=10, db_index=True,
         choices=[(type_.name, type_.value) for type_ in OwnershipType],
