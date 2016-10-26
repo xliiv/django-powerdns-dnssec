@@ -258,8 +258,8 @@ class Domain(PreviousStateMixin, OwnershipByService, TimeTrackable, Owned):
         return {}
 
     def all_owners(self):
-        """Get regular domain owners plus owners by service"""
-        return self.owners + self.service.owners
+        """Return queryset of all owners (regular and by service)"""
+        return (self.owners.all() | self.service.owners.all())
 
 
 class DomainOwner(models.Model):

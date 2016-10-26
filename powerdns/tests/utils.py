@@ -62,7 +62,7 @@ class ServiceOwnerFactory(DjangoModelFactory):
     class Meta:
         model = ServiceOwner
     service = factory.SubFactory(ServiceFactory)
-    user = factory.SubFactory(UserFactory)
+    owner = factory.SubFactory(UserFactory)
 
 
 class DomainFactory(DjangoModelFactory):

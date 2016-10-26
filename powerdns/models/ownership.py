@@ -37,7 +37,7 @@ class Service(TimeTrackable):
 
 class ServiceOwner(TimeTrackable):
     service = models.ForeignKey(Service)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL)
     ownership_type = models.CharField(
         max_length=10, db_index=True,
         choices=[(type_.name, type_.value) for type_ in OwnershipType],
@@ -45,7 +45,7 @@ class ServiceOwner(TimeTrackable):
 
     def __str__(self):
         return '{} - {} ({})'.format(
-            self.user, self.service, self.ownership_type,
+            self.owner, self.service, self.ownership_type,
         )
 
 
