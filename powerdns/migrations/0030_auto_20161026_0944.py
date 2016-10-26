@@ -16,20 +16,25 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='DomainOwner',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
-                ('ownership_type', models.CharField(choices=[('BO', 'Business Owner'), ('TO', 'Technical Owner')], max_length=10, db_index=True)),
+                ('id', models.AutoField(serialize=False, auto_created=True, primary_key=True, verbose_name='ID')),
+                ('ownership_type', models.CharField(max_length=10, choices=[('BO', 'Business Owner'), ('TO', 'Technical Owner')], db_index=True)),
                 ('domain', models.ForeignKey(to='powerdns.Domain')),
                 ('owner', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
             ],
         ),
+        migrations.RenameField(
+            model_name='serviceowner',
+            old_name='user',
+            new_name='owner',
+        ),
         migrations.AlterField(
             model_name='service',
             name='owners',
-            field=models.ManyToManyField(related_name='service_owners', through='powerdns.ServiceOwner', to=settings.AUTH_USER_MODEL),
+            field=models.ManyToManyField(to=settings.AUTH_USER_MODEL, related_name='service_owners', through='powerdns.ServiceOwner'),
         ),
         migrations.AddField(
             model_name='domain',
-            name='owners',
-            field=models.ManyToManyField(related_name='domain_owners', through='powerdns.DomainOwner', to=settings.AUTH_USER_MODEL),
+            name='direct_owners',
+            field=models.ManyToManyField(to=settings.AUTH_USER_MODEL, related_name='domain_owners', through='powerdns.DomainOwner'),
         ),
     ]
