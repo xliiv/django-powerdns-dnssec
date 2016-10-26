@@ -15,8 +15,8 @@ class TestDomain(TestCase):
         service_owner = ServiceOwnerFactory()
         domain_owner.domain.service = service_owner.service
 
-        self.assertEqual(domain_owner.domain.owners().count(), 2)
-        domain_users = domain_owner.domain.owners().values_list(
+        self.assertEqual(domain_owner.domain.owners.count(), 2)
+        domain_users = domain_owner.domain.owners.values_list(
             'username', flat=True,
         )
         self.assertTrue(
