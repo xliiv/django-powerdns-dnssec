@@ -12,6 +12,7 @@ from powerdns.models import (
     RecordRequest,
     RecordTemplate,
     RequestStates,
+    Service,
     SuperMaster,
     TsigKey,
 )
@@ -41,6 +42,12 @@ class DomainSerializer(OwnerSerializer):
     class Meta:
         model = Domain
         read_only_fields = ('notified_serial',)
+
+
+class ServiceSerializer(ModelSerializer):
+
+    class Meta:
+        model = Service
 
 
 class RecordRequestSerializer(OwnerSerializer):
@@ -81,6 +88,10 @@ class RecordSerializer(OwnerSerializer):
         required=False,
         allow_null=True,
     )
+    service = PrimaryKeyRelatedField(
+        queryset=Service.objects.all(),
+        required=True,
+    )
     modified = serializers.DateTimeField(
         format='%Y-%m-%d %H:%M:%S', read_only=True
     )
@@ -114,6 +125,27 @@ class RecordSerializer(OwnerSerializer):
         # DNS servers don't accept backslashes (\) in content so we neither
         if record_type == 'TXT':
             attrs['content'] = attrs['content'].replace('\\', '')
+
+    def _validate_service(self, attrs):
+        if (
+            # enforce service required for patch updates
+            not self.instance.service and
+            'service' not in attrs
+        ):
+            raise serializers.ValidationError({
+                'service': ['This field is required.']
+            })
+        elif (
+            # once service set can't be edited
+            self.instance.service and
+            'service' in attrs
+        ):
+            raise serializers.ValidationError({
+                'service': [(
+                    'Service changes unsupported. '
+                    'Add new one and delete this.'
+                )]
+            })
 
     def validate(self, attrs):
         _trim_whitespace(attrs, ['name', 'content'])
@@ -158,7 +190,8 @@ class RecordSerializer(OwnerSerializer):
                         ]
                     })
                 attrs['domain'] = domain
-
+        else:
+            self._validate_service(attrs)
         return attrs
 
 

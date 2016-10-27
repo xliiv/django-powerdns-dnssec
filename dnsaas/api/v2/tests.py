@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+import json
 import unittest
 from urllib.parse import urlencode
 
@@ -20,7 +21,8 @@ from powerdns.tests.utils import (
     DomainTemplateFactory,
     RecordFactory,
     RecordRequestFactory,
-    UserFactory
+    ServiceFactory,
+    UserFactory,
 )
 from dnsaas.api.v2.views import RecordViewSet, IPRecordView
 from dnsaas.api.v2.serializers import (
@@ -91,6 +93,23 @@ class BaseApiTestCase(TestCase):
             'super_user', 'test@test.test', 'super_user'
         )
         self.client = APIClient()
+
+    def send_post(self, url, data):
+        return self.client.post(
+            url, data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+
+    def send_patch(self, url, data):
+        return self.client.patch(
+            # making requests by `format="json"` generates exception:
+            # Unsupported media type "application/octet-stream" in request.
+            url, json.dumps(data),
+            content_type='application/json',
+            **{
+                'HTTP_ACCEPT': 'application/json; version=v2',
+            }
+        )
 
 
 class TestRecords(BaseApiTestCase):
@@ -1099,3 +1118,81 @@ class TestIPRecordTest(BaseApiTestCase):
             'action': 'delete'
         }
         self._send_post_data_to_endpoint()
+
+
+class TestServiceField(BaseApiTestCase):
+    def setUp(self):
+        self.guest = get_user_model().objects.create_user(
+            'guest', 'guest@example.com', 'guest'
+        )
+        self.owner_with_access = get_user_model().objects.create_user(
+            'owner_with_access', 'owner_with_access@example.com',
+            'owner_with_access'
+        )
+        self.domain = DomainFactory(
+            name='example.com', owner=self.owner_with_access
+        )
+
+    def _record_for_update(self):
+        return RecordFactory(
+            domain=self.domain,
+            type='A',
+            name='www.' + self.domain.name,
+            content='192.168.1.1',
+            service=None,
+        )
+
+    def test_create_record_raise_error_when_no_service(self):
+        self.client.login(
+            username='owner_with_access', password='owner_with_access'
+        )
+
+        response = self.send_post(
+            reverse('api:v2:record-list'),
+            {
+                'type': 'A',
+                'domain': self.domain.id,
+                'name': 'example.com',
+                'content': '192.168.0.1',
+            },
+        )
+
+        self.assertEqual(
+            response.data['service'], ['This field is required.']
+        )
+
+    def test_edit_record_raise_error_when_service_is_empty(self):
+        self.client.login(
+            username='owner_with_access', password='owner_with_access'
+        )
+        record = self._record_for_update()
+
+        response = self.send_patch(
+            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            data={'remarks': 'update'},
+        )
+
+        self.assertEqual(
+            response.data['service'], ['This field is required.']
+        )
+
+    def test_edit_record_raise_error_when_service_is_changing(self):
+        self.client.login(
+            username='owner_with_access', password='owner_with_access'
+        )
+        record = self._record_for_update()
+        record.service = ServiceFactory()
+        record.save()
+
+        response = self.send_patch(
+            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            data={
+                'service': ServiceFactory().id,
+                'remarks': 'update'
+            },
+        )
+
+        self.assertEqual(
+            response.data['service'],
+            ['Service changes unsupported. Add new one and delete this.'],
+        )
