@@ -34,6 +34,18 @@
           </autocomplete>
         </div>
       </div>
+      <div class="form-group">
+        <label for="service" class="col-sm-2 control-label">Service</label>
+        <div class="col-sm-6">
+          <autocomplete
+            [forNgModel]="record"
+            [service]="serviceService"
+            ngModelField="service"
+            [readOnly]="!isCreate"
+            placeholder="Search service">
+          </autocomplete>
+        </div>
+      </div>
        <div class="form-group">
         <label for="type" class="col-sm-2 control-label">Type</label>
          <div class="col-sm-2">

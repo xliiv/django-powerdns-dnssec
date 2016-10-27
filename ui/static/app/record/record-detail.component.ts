@@ -13,6 +13,7 @@ import { TooltipDirective } from "../tooltip.directive";
 import { AutocompleteComponent } from "../autocomplete/autocomplete.component";
 import { Domain } from "../domain/domain";
 import { DomainService } from "../domain/domain.service";
+import { ServiceService } from "../service/service.service";
 import { RecordService } from "./record.service";
 import { Record } from "./record";
 import { isLoggedin }  from "../auth/auth.service";
@@ -23,7 +24,7 @@ declare var $: any;
 
 @Component({
   templateUrl: "/static/app/record/record-detail.component.html",
-  providers: [HTTP_PROVIDERS, RecordService, DomainService],
+  providers: [HTTP_PROVIDERS, RecordService, DomainService, ServiceService],
   directives: [FORM_DIRECTIVES, AutocompleteComponent, TooltipDirective],
   styles: [`
     .ng-invalid { border-color:#ebccd1;}
@@ -52,6 +53,7 @@ export class RecordDetailComponent implements OnInit {
       private routeParams: RouteParams,
       private recordService: RecordService,
       private domainService: DomainService,
+      private serviceService: ServiceService,
       private authService: AuthService,
       private formBuilder: FormBuilder
     ) {
