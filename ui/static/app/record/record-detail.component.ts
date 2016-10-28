@@ -91,9 +91,9 @@ export class RecordDetailComponent implements OnInit {
       }
     }
 
-    //get isService(): boolean{
-    ////TODO
-    //}
+    get canEditService():Boolean {
+      return this.isCreate ? true : false;
+    }
 
     getDomain(callbackAfterLoad?: Function) {
       if (this.record.domain) {

@@ -40,6 +40,7 @@
           <autocomplete
             [forNgModel]="record"
             [service]="serviceService"
+            [readOnly]="!canEditService"
             ngModelField="service"
             placeholder="Search service">
           </autocomplete>
