@@ -13,11 +13,13 @@ from threadlocals.threadlocals import get_current_user
 import rules
 
 from powerdns.models import (
-    validate_domain_name,
-    Owned,
     Domain,
-    Record
+    Owned,
+    OwnershipByService,
+    Record,
+    validate_domain_name,
 )
+
 from powerdns.utils import AutoPtrOptions, RecordLike, flat_dict_diff
 
 
@@ -139,6 +141,10 @@ class ChangeCreateRequest(Request):
     """Abstract change/create request"""
 
     ignore_fields = {'created', 'modified'}
+    # fields which are shared copy with Record
+    fields_to_copy = []
+    # Deprecated: fields which are prefixed copy with Record
+    copy_fields = []
     prefix = 'target_'
 
     class Meta:
@@ -159,6 +165,26 @@ class ChangeCreateRequest(Request):
     def _set_json_history(self, object_):
         self.last_change_json = self._get_json_history(object_)
 
+    def _copy_fields(self, rel_obj, fields, prefix):
+        """Copy `fields` to `rel_obj` which are prefixed by `prefix`"""
+        for field_name in fields:
+            if field_name in self.ignore_fields:
+                continue
+            setattr(
+                rel_obj, field_name[len(prefix):], getattr(self, field_name)
+            )
+
+    def _exclude_target_owner(self, fields):
+        """
+        Do not copy target_owner when it's empty.
+        """
+        if (
+            'target_owner' in fields and not self.target_owner
+        ):
+            fields = fields[:]
+            fields.remove('target_owner')
+        return fields
+
     @transaction.atomic
     def accept(self):
         object_ = self.get_object()
@@ -167,16 +193,13 @@ class ChangeCreateRequest(Request):
             return object_
 
         self._set_json_history(object_)
-        for field_name in type(self).copy_fields:
-            if field_name in self.ignore_fields:
-                continue
-            if field_name == 'target_owner' and not getattr(self, field_name):
-                continue
-            setattr(
-                object_,
-                field_name[len(self.prefix):],
-                getattr(self, field_name)
-            )
+
+        # copy fields which are shared copy with related object (eg. Record)
+        self._copy_fields(object_, type(self).fields_to_copy, '')
+        # copy fields which are prefixed copy with related object (eg. Record)
+        fields = self._exclude_target_owner(type(self).copy_fields)
+        self._copy_fields(object_, fields, self.prefix)
+
         object_.save()
         self.assign_object(object_)
         self.state = RequestStates.ACCEPTED
@@ -210,9 +233,10 @@ class ChangeCreateRequest(Request):
                 log.warning("Unknown field")
 
 
-class DomainRequest(ChangeCreateRequest):
+class DomainRequest(OwnershipByService, ChangeCreateRequest):
     """Request for domain creation/modification"""
 
+    fields_to_copy = ['service']
     copy_fields = [
         'target_name',
         'target_master',
@@ -330,8 +354,9 @@ class DomainRequest(ChangeCreateRequest):
 rules.add_perm('powerdns.add_domainrequest', rules.is_authenticated)
 
 
-class RecordRequest(ChangeCreateRequest, RecordLike):
+class RecordRequest(OwnershipByService, ChangeCreateRequest, RecordLike):
 
+    fields_to_copy = ['service']
     copy_fields = [
         'target_name',
         'target_type',
