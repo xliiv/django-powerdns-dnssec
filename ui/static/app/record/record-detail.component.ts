@@ -37,6 +37,7 @@ export class RecordDetailComponent implements OnInit {
     record: Record;
     domain: Domain;
     errorMessage: any;
+    initService: any;
     isCreate: boolean = true;
     recordTypes: Array<{0: string, 1: string}> = Record.recordTypes;
     recordForm: ControlGroup;
@@ -84,6 +85,7 @@ export class RecordDetailComponent implements OnInit {
         ).subscribe(
           record => {
             this.record = record;
+            this.initService = this.record.service;
             this.getDomain();
           },
           error => this.errorMessage = <any>error
@@ -92,7 +94,7 @@ export class RecordDetailComponent implements OnInit {
     }
 
     get canEditService():Boolean {
-      return this.isCreate ? true : false;
+      return !this.initService;
     }
 
     getDomain(callbackAfterLoad?: Function) {
