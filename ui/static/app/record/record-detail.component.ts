@@ -91,6 +91,10 @@ export class RecordDetailComponent implements OnInit {
       }
     }
 
+    //get isService(): boolean{
+    ////TODO
+    //}
+
     getDomain(callbackAfterLoad?: Function) {
       if (this.record.domain) {
         this.domainService.getDomainById(
@@ -120,7 +124,7 @@ export class RecordDetailComponent implements OnInit {
     }
 
     onSubmit() {
-      if (this.recordForm.valid && this.domain) {
+      if (this.recordForm.valid && this.domain && this.record.service) {
         this.saved = true;
         if (this.recordName) {
           let dot: string = this.recordName.endsWith(".") ? "" : ".";

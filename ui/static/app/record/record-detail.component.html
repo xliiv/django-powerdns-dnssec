@@ -41,7 +41,6 @@
             [forNgModel]="record"
             [service]="serviceService"
             ngModelField="service"
-            [readOnly]="!isCreate"
             placeholder="Search service">
           </autocomplete>
         </div>
@@ -184,7 +183,7 @@
         </div>
         <div class="col-md-3 col-md-offset-3">
           <div class="pull-right">
-            <button type= "submit" class="btn btn-success" [disabled]="!recordForm.valid && !domain">
+            <button type="submit" class="btn btn-success" [disabled]="!recordForm.valid || !domain || !record.service">
               <span *ngIf="isCreate">
                 <span *ngIf="saved" class="glyphicon glyphicon-refresh glyphicon-spin" aria-hidden="true"></span>
                 <span *ngIf="!saved" class="glyphicon glyphicon-plus" aria-hidden="true"></span>
