@@ -141,9 +141,9 @@ class ChangeCreateRequest(Request):
     """Abstract change/create request"""
 
     ignore_fields = {'created', 'modified'}
-    # fields which are shared copy with Record
+    # fields which are shared copy with Record/Domain
     fields_to_copy = []
-    # Deprecated: fields which are prefixed copy with Record
+    # Deprecated: fields which are prefixed copy with Record/Domain
     copy_fields = []
     prefix = 'target_'
 
