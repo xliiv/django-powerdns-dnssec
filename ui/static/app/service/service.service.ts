@@ -16,20 +16,20 @@ export class ServiceService implements AutocompleteServiceInterface {
     private http: HttpClient
   ) { }
 
-  //getDomains(search: URLSearchParams): Observable<Response> {
-  //  let url: string = ConfigService.get("serviceUrl");
-  //  return this.http.get(url, search).catch(this.handleError);
-  //}
+  getServices(search: URLSearchParams): Observable<Response> {
+    let url: string = ConfigService.get("serviceUrl");
+    return this.http.get(url, search).catch(this.handleError);
+  }
 
-  //getDomainById(id: number): Observable<Domain> {
-  //  let url: string = `${ConfigService.get("serviceUrl")}${id}/`;
-  //  return this.http.get(url).map(
-  //    response => {
-  //      let json = response.json();
-  //      return json || {};
-  //    }
-  //  ).catch(this.handleError);
-  //}
+  getServiceById(id: number): Observable<Service> {
+    let url: string = `${ConfigService.get("serviceUrl")}${id}/`;
+    return this.http.get(url).map(
+      response => {
+        let json = response.json();
+        return json || {};
+      }
+    ).catch(this.handleError);
+  }
 
   getAutocompleteSearchResults(value: string): Observable<Service[]> {
     let result: Array<{0: number, 1: string}> = [];
