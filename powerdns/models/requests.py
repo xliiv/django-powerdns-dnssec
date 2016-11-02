@@ -225,6 +225,7 @@ class DomainRequest(ChangeCreateRequest):
         'target_reverse_template',
         'target_auto_ptr',
         'target_owner',
+        'target_service',
     ]
 
     domain = models.ForeignKey(
@@ -246,6 +247,7 @@ class DomainRequest(ChangeCreateRequest):
         ),
 
     )
+    target_service = models.ForeignKey(Service, blank=True, null=True)
     target_name = models.CharField(
         _("name"),
         max_length=255,
@@ -344,6 +346,7 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
         'target_remarks',
         'target_ttl',
         'target_owner',
+        'target_service',
     ]
 
     domain = models.ForeignKey(
