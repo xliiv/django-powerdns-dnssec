@@ -130,27 +130,6 @@ class RecordSerializer(OwnerSerializer):
         if record_type == 'TXT':
             attrs['content'] = attrs['content'].replace('\\', '')
 
-    def _validate_service(self, attrs):
-        if (
-            # enforce service required for patch updates
-            not self.instance.service and
-            'service' not in attrs
-        ):
-            raise serializers.ValidationError({
-                'service': ['This field is required.']
-            })
-        elif (
-            # once service set can't be edited
-            self.instance.service and
-            'service' in attrs
-        ):
-            raise serializers.ValidationError({
-                'service': [(
-                    'Service changes unsupported. '
-                    'Add new one and delete this.'
-                )]
-            })
-
     def validate(self, attrs):
         _trim_whitespace(attrs, ['name', 'content'])
         domain, content, record_type = (
@@ -194,8 +173,6 @@ class RecordSerializer(OwnerSerializer):
                         ]
                     })
                 attrs['domain'] = domain
-        else:
-            self._validate_service(attrs)
         return attrs
 
 

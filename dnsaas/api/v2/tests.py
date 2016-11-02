@@ -1196,7 +1196,7 @@ class TestServiceField(BaseApiTestCase):
             response.data['service'], ['This field is required.']
         )
 
-    def test_edit_record_raise_error_when_service_is_empty(self):
+    def test_patch_record_works_when_service_is_empty(self):
         self.client.login(
             username='owner_with_access', password='owner_with_access'
         )
@@ -1207,11 +1207,9 @@ class TestServiceField(BaseApiTestCase):
             data={'remarks': 'update'},
         )
 
-        self.assertEqual(
-            response.data['service'], ['This field is required.']
-        )
+        self.assertEqual(response.status_code, 200)
 
-    def test_edit_record_update_service_when_empty_earlier(self):
+    def test_patch_record_update_service_when_empty_earlier(self):
         self.client.login(
             username='owner_with_access', password='owner_with_access'
         )
@@ -1227,7 +1225,7 @@ class TestServiceField(BaseApiTestCase):
         self.assertEqual(record.service.id, service.id)
         self.assertEqual(response.data['service'], service.id)
 
-    def test_edit_record_raise_error_when_service_is_changing(self):
+    def test_patch_record_works_when_service_is_changing(self):
         self.client.login(
             username='owner_with_access', password='owner_with_access'
         )
@@ -1235,15 +1233,15 @@ class TestServiceField(BaseApiTestCase):
         record.service = ServiceFactory()
         record.save()
 
+        new_service = ServiceFactory()
         response = self.send_patch(
             reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
             data={
-                'service': ServiceFactory().id,
+                'service': new_service.id,
                 'remarks': 'update'
             },
         )
 
-        self.assertEqual(
-            response.data['service'],
-            ['Service changes unsupported. Add new one and delete this.'],
-        )
+        record.refresh_from_db()
+        self.assertEqual(record.service.id, new_service.id)
+        self.assertEqual(response.data['service'], new_service.id)
