@@ -32,7 +32,6 @@ export class DomainService implements AutocompleteServiceInterface {
   }
 
   getAutocompleteSearchResults(value: string): Observable<Domain[]> {
-    let result: Array<{0: number, 1: string}> = [];
     let url: string =  ConfigService.get("domainUrl");
     let params: URLSearchParams = new URLSearchParams();
     params.set("name", value);
