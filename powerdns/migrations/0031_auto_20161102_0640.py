@@ -13,12 +13,12 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='domainrequest',
-            name='service',
+            name='target_service',
             field=models.ForeignKey(blank=True, null=True, to='powerdns.Service'),
         ),
         migrations.AddField(
             model_name='recordrequest',
-            name='service',
+            name='target_service',
             field=models.ForeignKey(blank=True, null=True, to='powerdns.Service'),
         ),
     ]
