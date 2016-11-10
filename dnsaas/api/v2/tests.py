@@ -1177,7 +1177,6 @@ class TestServiceField(BaseApiTestCase):
         self.assertEqual(record.service.id, service.id)
         self.assertEqual(response.data['service'], service.id)
 
-    @override_settings(REQUIRED_SERVICE_FIELD=True)
     def test_create_record_raise_error_when_no_service(self):
         self.client.login(
             username='owner_with_access', password='owner_with_access'

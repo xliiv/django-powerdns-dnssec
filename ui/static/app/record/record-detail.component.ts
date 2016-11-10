@@ -139,7 +139,7 @@ export class RecordDetailComponent implements OnInit {
       if (Boolean(ConfigService.get("requiredServiceField"))) {
         validForm = validForm && Boolean(this.record.service);
       }
-      if (validForm == true) {
+      if (validForm) {
         this.saved = true;
         if (this.recordName) {
           let dot: string = this.recordName.endsWith(".") ? "" : ".";
