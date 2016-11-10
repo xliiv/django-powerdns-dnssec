@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 from django.contrib.auth import get_user_model
 from django.core.urlresolvers import reverse
 from django.http import QueryDict
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory
 
@@ -1177,6 +1177,7 @@ class TestServiceField(BaseApiTestCase):
         self.assertEqual(record.service.id, service.id)
         self.assertEqual(response.data['service'], service.id)
 
+    @override_settings(REQUIRED_SERVICE_FIELD=True)
     def test_create_record_raise_error_when_no_service(self):
         self.client.login(
             username='owner_with_access', password='owner_with_access'
