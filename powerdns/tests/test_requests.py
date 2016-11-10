@@ -3,9 +3,17 @@ from django.test import TestCase
 from threadlocals.threadlocals import set_current_user
 from django.contrib.auth import get_user_model
 
-from powerdns.models.powerdns import Domain, Record
-from powerdns.models.requests import DomainRequest, RecordRequest
-from powerdns.tests.utils import assert_does_exist, assert_not_exists
+from powerdns.models import (
+    Domain,
+    DomainRequest,
+    Record,
+    RecordRequest,
+)
+from powerdns.tests.utils import (
+    ServiceFactory,
+    assert_does_exist,
+    assert_not_exists,
+)
 
 
 class TestRequests(TestCase):
@@ -37,6 +45,7 @@ class TestRequests(TestCase):
             parent_domain=self.domain,
             target_name='subdomain.example.com',
             target_owner=self.user1,
+            target_service=ServiceFactory(),
         )
         request.accept()
         assert_does_exist(
@@ -50,6 +59,7 @@ class TestRequests(TestCase):
             target_type='MASTER',
             owner=self.user2,
             target_owner=self.user1,
+            target_service=ServiceFactory(),
         )
         request.accept()
         assert_does_exist(

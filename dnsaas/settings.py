@@ -238,6 +238,7 @@ SEC_ACCEPTANCE_FOR_RECORD_TYPE = {'A', 'AAAA'}
 # tells which record should be checked by SEO (when rest of conditions are met,
 # see: DeleteRequest.is_seo_acceptance_required)
 SEO_ACCEPTANCE_FOR_RECORD_TYPE = {'A', 'AAAA', 'CNAME'}
+REQUIRED_SERVICE_FIELD = os.environ.get('REQUIRED_SERVICE_FIELD', True)
 
 if not TESTING:
     try:

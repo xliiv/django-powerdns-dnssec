@@ -1,6 +1,7 @@
 """Serializer classes for DNSaaS API"""
 import ipaddress
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from powerdns.utils import hostname2domain
 from powerdns.models import (
@@ -11,7 +12,10 @@ from powerdns.models import (
     Record,
     RecordRequest,
     RecordTemplate,
+    RequestStates,
+    Service,
     SuperMaster,
+    TsigKey,
 )
 from rest_framework import serializers
 from rest_framework.serializers import (
@@ -20,8 +24,6 @@ from rest_framework.serializers import (
     ModelSerializer,
     SlugRelatedField,
 )
-from powerdns.models.requests import RequestStates
-from powerdns.models.tsigkeys import TsigKey
 
 
 class OwnerSerializer(ModelSerializer):
@@ -43,6 +45,12 @@ class DomainSerializer(OwnerSerializer):
         read_only_fields = ('notified_serial',)
 
 
+class ServiceSerializer(ModelSerializer):
+
+    class Meta:
+        model = Service
+
+
 class RecordRequestSerializer(OwnerSerializer):
     last_change = serializers.SerializerMethodField()
     target_owner = SlugRelatedField(
@@ -50,6 +58,13 @@ class RecordRequestSerializer(OwnerSerializer):
         queryset=get_user_model().objects.all(),
         allow_null=True,
         required=False,
+    )
+
+    created = serializers.DateTimeField(
+        format='%Y-%m-%d %H:%M:%S', read_only=True
+    )
+    modified = serializers.DateTimeField(
+        format='%Y-%m-%d %H:%M:%S', read_only=True
     )
 
     class Meta:
@@ -72,6 +87,10 @@ def _trim_whitespace(data_dict, trim_fields):
 
 class RecordSerializer(OwnerSerializer):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['service'].required = settings.REQUIRED_SERVICE_FIELD
+
     class Meta:
         model = Record
         read_only_fields = ('change_date', 'ordername',)
@@ -81,6 +100,11 @@ class RecordSerializer(OwnerSerializer):
         required=False,
         allow_null=True,
     )
+    service = PrimaryKeyRelatedField(
+        queryset=Service.objects.all(),
+        # required by setting REQUIRED_SERVICE_FIELD
+    )
+    service_name = serializers.SerializerMethodField()
     modified = serializers.DateTimeField(
         format='%Y-%m-%d %H:%M:%S', read_only=True
     )
@@ -90,6 +114,12 @@ class RecordSerializer(OwnerSerializer):
     delete_request = serializers.SerializerMethodField(
         'get_delete_record_request'
     )
+    unrestricted_domain = serializers.BooleanField(
+        source='domain.unrestricted', read_only=True
+    )
+
+    def get_service_name(self, obj):
+        return obj.service.name if obj.service else ''
 
     def get_change_record_request(self, record):
         record_request = record.requests.all()
@@ -155,7 +185,6 @@ class RecordSerializer(OwnerSerializer):
                         ]
                     })
                 attrs['domain'] = domain
-
         return attrs
 
 

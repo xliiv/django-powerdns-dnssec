@@ -7,12 +7,14 @@ import {
   Validators
 } from "@angular/common";
 import { CanActivate, Router, RouteParams } from "@angular/router-deprecated";
+import { ConfigService } from "../config.service";
 import { HTTP_PROVIDERS } from "@angular/http";
 import { AuthService } from "../auth/auth.service";
 import { TooltipDirective } from "../tooltip.directive";
 import { AutocompleteComponent } from "../autocomplete/autocomplete.component";
 import { Domain } from "../domain/domain";
 import { DomainService } from "../domain/domain.service";
+import { ServiceService } from "../service/service.service";
 import { RecordService } from "./record.service";
 import { Record } from "./record";
 import { isLoggedin }  from "../auth/auth.service";
@@ -23,7 +25,7 @@ declare var $: any;
 
 @Component({
   templateUrl: "/static/app/record/record-detail.component.html",
-  providers: [HTTP_PROVIDERS, RecordService, DomainService],
+  providers: [HTTP_PROVIDERS, RecordService, DomainService, ServiceService],
   directives: [FORM_DIRECTIVES, AutocompleteComponent, TooltipDirective],
   styles: [`
     .ng-invalid { border-color:#ebccd1;}
@@ -36,6 +38,7 @@ export class RecordDetailComponent implements OnInit {
     record: Record;
     domain: Domain;
     errorMessage: any;
+    initService: any;
     isCreate: boolean = true;
     recordTypes: Array<{0: string, 1: string}> = Record.recordTypes;
     recordForm: ControlGroup;
@@ -52,6 +55,7 @@ export class RecordDetailComponent implements OnInit {
       private routeParams: RouteParams,
       private recordService: RecordService,
       private domainService: DomainService,
+      private serviceService: ServiceService,
       private authService: AuthService,
       private formBuilder: FormBuilder
     ) {
@@ -82,11 +86,24 @@ export class RecordDetailComponent implements OnInit {
         ).subscribe(
           record => {
             this.record = record;
+            this.initService = this.record.service;
             this.getDomain();
           },
           error => this.errorMessage = <any>error
         );
       }
+    }
+
+    get canSubmit():Boolean {
+      if (Boolean(ConfigService.get("requiredServiceField"))) {
+        return !this.recordForm.valid || !this.domain || !this.record.service;
+      } else {
+        return !this.recordForm.valid || !this.domain;
+      }
+    }
+
+    get canEditService():Boolean {
+      return !this.initService;
     }
 
     getDomain(callbackAfterLoad?: Function) {
@@ -118,7 +135,11 @@ export class RecordDetailComponent implements OnInit {
     }
 
     onSubmit() {
-      if (this.recordForm.valid && this.domain) {
+      var validForm: Boolean = this.recordForm.valid && Boolean(this.domain);
+      if (Boolean(ConfigService.get("requiredServiceField"))) {
+        validForm = validForm && Boolean(this.record.service);
+      }
+      if (validForm) {
         this.saved = true;
         if (this.recordName) {
           let dot: string = this.recordName.endsWith(".") ? "" : ".";

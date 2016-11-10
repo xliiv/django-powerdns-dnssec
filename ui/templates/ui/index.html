@@ -16,6 +16,8 @@
     var globalConfig = {
       debug: {% if settings.DEBUG %}true{% else %}false{% endif %},
       ravenEnabled: false,
+      requiredServiceField: {% if settings.REQUIRED_SERVICE_FIELD %}true{% else %}false{% endif %},
+      serviceUrl: "{% url 'api:v2:service-list' %}",
       domainUrl: "{% url 'api:v2:domain-list' %}",
       recordUrl: "{% url 'api:v2:record-list' %}",
       recordRequestUrl: "{% url 'api:v2:recordrequest-list' %}",

@@ -13,12 +13,15 @@ from threadlocals.threadlocals import get_current_user
 import rules
 
 from powerdns.models import (
-    validate_domain_name,
-    Owned,
     Domain,
-    Record
+    Owned,
+    Record,
+    Service,
+    validate_domain_name,
 )
-from powerdns.utils import AutoPtrOptions, RecordLike, flat_dict_diff
+
+from powerdns.utils import \
+    AutoPtrOptions, RecordLike, TimeTrackable, flat_dict_diff
 
 
 log = logging.getLogger(__name__)
@@ -72,7 +75,7 @@ class RequestStates(Choices):
     REJECTED = _('Rejected')
 
 
-class Request(Owned):
+class Request(Owned, TimeTrackable):
     """Abstract request"""
 
     class Meta:
@@ -244,6 +247,7 @@ class DomainRequest(ChangeCreateRequest):
         'target_reverse_template',
         'target_auto_ptr',
         'target_owner',
+        'target_service',
     ]
 
     domain = models.ForeignKey(
@@ -265,6 +269,7 @@ class DomainRequest(ChangeCreateRequest):
         ),
 
     )
+    target_service = models.ForeignKey(Service, blank=True, null=True)
     target_name = models.CharField(
         _("name"),
         max_length=255,
@@ -363,6 +368,7 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
         'target_remarks',
         'target_ttl',
         'target_owner',
+        'target_service',
     ]
 
     domain = models.ForeignKey(
@@ -384,6 +390,7 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
             'The record for which a change is being requested'
         ),
     )
+    target_service = models.ForeignKey(Service, blank=True, null=True)
     target_name = models.CharField(
         _("name"), max_length=255, blank=False, null=False,
         validators=[validate_domain_name],

@@ -10,10 +10,17 @@ from django.test import TestCase
 from factory.django import DjangoModelFactory
 from rest_framework.test import APIClient
 
-from powerdns.models.powerdns import Record, Domain
-from powerdns.models.requests import DeleteRequest, RecordRequest
-from powerdns.models.ownership import ServiceOwner, Service
-from powerdns.models.templates import RecordTemplate, DomainTemplate
+from powerdns.models import (
+    DeleteRequest,
+    Domain,
+    DomainOwner,
+    DomainTemplate,
+    Record,
+    RecordRequest,
+    RecordTemplate,
+    Service,
+    ServiceOwner,
+)
 from powerdns.utils import AutoPtrOptions
 
 
@@ -54,8 +61,8 @@ class ServiceFactory(DjangoModelFactory):
 class ServiceOwnerFactory(DjangoModelFactory):
     class Meta:
         model = ServiceOwner
-    service = factory.SubFactory(UserFactory)
-    user = factory.SubFactory(UserFactory)
+    service = factory.SubFactory(ServiceFactory)
+    owner = factory.SubFactory(UserFactory)
 
 
 class DomainFactory(DjangoModelFactory):
@@ -65,6 +72,13 @@ class DomainFactory(DjangoModelFactory):
     name = factory.Sequence(lambda n: 'name%d.com' % n)
     service = factory.SubFactory(ServiceFactory)
     auto_ptr = AutoPtrOptions.NEVER
+
+
+class DomainOwnerFactory(DjangoModelFactory):
+    class Meta:
+        model = DomainOwner
+    domain = factory.SubFactory(DomainFactory)
+    owner = factory.SubFactory(UserFactory)
 
 
 class RecordFactory(DjangoModelFactory):
@@ -83,6 +97,7 @@ class RecordRequestFactory(DjangoModelFactory):
     record = factory.SubFactory(RecordFactory)
     domain = factory.SubFactory(DomainFactory)
     owner = factory.SubFactory(UserFactory)
+    target_service = factory.SubFactory(ServiceFactory)
 
 
 class RecordDeleteRequestFactory(factory.django.DjangoModelFactory):

@@ -17,9 +17,13 @@ from powerdns.models import (
     DomainMetadata,
     DomainTemplate,
     Record,
-    RecordTemplate,
     RecordRequest,
+    RecordTemplate,
+    RequestStates,
+    Service,
     SuperMaster,
+    TsigKey,
+    can_auto_accept_record_request,
 )
 from rest_framework import filters, status
 from rest_framework.permissions import DjangoObjectPermissions, IsAdminUser
@@ -35,15 +39,11 @@ from .serializers import (
     RecordRequestSerializer,
     RecordSerializer,
     RecordTemplateSerializer,
+    ServiceSerializer,
     SuperMasterSerializer,
     TsigKeysTemplateSerializer,
 )
 from powerdns.utils import to_reverse
-from powerdns.models.tsigkeys import TsigKey
-from powerdns.models.requests import (
-    RequestStates,
-    can_auto_accept_record_request,
-)
 
 
 log = logging.getLogger(__name__)
@@ -89,6 +89,14 @@ class DomainViewSet(OwnerViewSet):
     filter_backends = (filters.DjangoFilterBackend, filters.SearchFilter)
     filter_class = DomainFilter
     search_fields = ['name', 'owner__username']
+
+
+class ServiceViewSet(FiltersMixin, ModelViewSet):
+
+    queryset = Service.objects.all()
+    serializer_class = ServiceSerializer
+    filter_backends = (filters.DjangoFilterBackend, filters.SearchFilter)
+    search_fields = ['name', 'uid', 'is_active']
 
 
 class RecordRequestsViewSet(FiltersMixin, ReadOnlyModelViewSet):
@@ -379,13 +387,28 @@ class IPRecordView(APIView):
             record.domain = hostname2domain(new['hostname'])
             record.content = new['address']
             record.save()
+            # If change hostname update name records txt.
+            log.info('Update TXT records from: {} hostname to: {}'.format(
+                old['hostname'], new['hostname']
+            ))
+            Record.objects.filter(
+                name=old['hostname'],
+                type='TXT'
+            ).update(
+                name=new['hostname'],
+                domain=record.domain
+            )
+
         return status.HTTP_200_OK, 'updated'
 
     def _delete_record(self, data):
         ip, hostname = data['address'], data['hostname']
         record = self._get_record(ip, hostname)
         if record:
+            log.warning('Delete record: {}'.format(record))
             record.delete()
+            log.warning('Delete TXT records for {} hostname'.format(hostname))
+            Record.objects.filter(name=hostname, type='TXT').delete()
             return status.HTTP_200_OK, 'deleted'
         return status.HTTP_200_OK, 'noop'
 

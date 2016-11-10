@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+import json
 import unittest
 from urllib.parse import urlencode
 
@@ -9,9 +10,9 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory
 
-from powerdns.models.powerdns import Record
-from powerdns.models.requests import (
+from powerdns.models import (
     DeleteRequest,
+    Record,
     RecordRequest,
     RequestStates,
 )
@@ -20,7 +21,8 @@ from powerdns.tests.utils import (
     DomainTemplateFactory,
     RecordFactory,
     RecordRequestFactory,
-    UserFactory
+    ServiceFactory,
+    UserFactory,
 )
 from dnsaas.api.v2.views import RecordViewSet, IPRecordView
 from dnsaas.api.v2.serializers import (
@@ -92,6 +94,23 @@ class BaseApiTestCase(TestCase):
         )
         self.client = APIClient()
 
+    def send_post(self, url, data):
+        return self.client.post(
+            url, data, format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+
+    def send_patch(self, url, data):
+        return self.client.patch(
+            # making requests by `format="json"` generates exception:
+            # Unsupported media type "application/octet-stream" in request.
+            url, json.dumps(data),
+            content_type='application/json',
+            **{
+                'HTTP_ACCEPT': 'application/json; version=v2',
+            }
+        )
+
 
 class TestRecords(BaseApiTestCase):
     def setUp(self):
@@ -102,18 +121,22 @@ class TestRecords(BaseApiTestCase):
         self.regular_user2 = get_user_model().objects.create_user(
             'regular_user2', 'regular_user2@test.test', 'regular_user2'
         )
+        self.default_data = {
+            'service': ServiceFactory().id,
+        }
 
     def test_record_is_created_when_superuser(self):
         self.client.login(username='super_user', password='super_user')
         domain = DomainFactory(name='example.com', owner=self.super_user)
-        data = {
+        self.default_data.update({
             'type': 'cname'.upper(),
             'domain': domain.id,
             'name': 'example.com',
             'content': '192.168.0.1',
-        }
+            'service': ServiceFactory().id,
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -121,14 +144,14 @@ class TestRecords(BaseApiTestCase):
     def test_record_is_created_when_user_owns_domain(self):
         self.client.login(username='regular_user1', password='regular_user1')
         domain = DomainFactory(name='example.com', owner=self.regular_user1)
-        data = {
+        self.default_data.update({
             'type': 'cname'.upper(),
             'domain': domain.id,
             'name': 'example.com',
             'content': '192.168.0.1',
-        }
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -136,14 +159,14 @@ class TestRecords(BaseApiTestCase):
     def test_record_is_not_created_when_domain_is_not_owned(self):
         self.client.login(username='regular_user1', password='regular_user1')
         domain = DomainFactory(name='example.com', owner=self.regular_user2)
-        data = {
+        self.default_data.update({
             'type': 'cname'.upper(),
             'domain': domain.id,
             'name': 'example.com',
             'content': '192.168.0.1',
-        }
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
@@ -157,14 +180,14 @@ class TestRecords(BaseApiTestCase):
         )
         self.client.login(username='regular_user1', password='regular_user1')
 
-        data = {
+        self.default_data.update({
             'type': 'A',
             'domain': domain.id,
             'name': 'example2.com',
             'content': '10.0.0.0',
-        }
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -175,15 +198,15 @@ class TestRecords(BaseApiTestCase):
     def test_user_is_set_correct_when_adding_record_with_owner(self):
         self.client.login(username='super_user', password='super_user')
         domain = DomainFactory(name='example.com', owner=self.super_user)
-        data = {
+        self.default_data.update({
             'type': 'cname'.upper(),
             'domain': domain.id,
             'name': 'example.com',
             'content': '192.168.0.1',
             'owner': self.regular_user1.username,
-        }
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -197,14 +220,14 @@ class TestRecords(BaseApiTestCase):
     def test_user_is_set_correct_when_adding_record_without_owner(self):
         self.client.login(username='super_user', password='super_user')
         domain = DomainFactory(name='example.com', owner=self.super_user)
-        data = {
+        self.default_data.update({
             'type': 'cname'.upper(),
             'domain': domain.id,
             'name': 'example.com',
             'content': '192.168.0.1',
-        }
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -218,14 +241,14 @@ class TestRecords(BaseApiTestCase):
     def test_record_creation_dumps_history_data_correctly(self):
         self.client.login(username='super_user', password='super_user')
         domain = DomainFactory(name='example.com', owner=self.super_user)
-        data = {
+        self.default_data.update({
             'type': 'CNAME',
             'domain': domain.id,
             'name': 'example.com',
             'content': '192.168.0.1',
-        }
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         record_request = RecordRequest.objects.get(
@@ -245,14 +268,14 @@ class TestRecords(BaseApiTestCase):
     def test_rejected_record_creation_dumps_history_correctly(self):
         self.client.login(username='regular_user1', password='regular_user1')
         domain = DomainFactory(name='example.com', owner=self.super_user)
-        data = {
+        self.default_data.update({
             'type': 'CNAME',
             'domain': domain.id,
             'name': 'www.example.com',
             'content': 'example.com',
-        }
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         record_request = RecordRequest.objects.get(
@@ -275,14 +298,14 @@ class TestRecords(BaseApiTestCase):
     def test_create_txt_record_removes_backslashes_from_content(self):
         domain = DomainFactory(name='example.com', owner=self.super_user)
         self.client.login(username='super_user', password='super_user')
-        data = {
+        self.default_data.update({
             'type': 'TXT',
             'domain': domain.id,
             'name': 'www.example.com',
             'content': '\\a\\a\\',
-        }
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.data['content'], 'aa')
@@ -503,15 +526,16 @@ class TestRecords(BaseApiTestCase):
 
     def test_rejected_record_update_dumps_history_correctly(self):
         self.client.login(username='regular_user1', password='regular_user1')
-        data = {
+        self.default_data.update({
             'domain': DomainFactory(name='example.com', owner=self.super_user),
             'type': 'CNAME',
             'name': 'www.example.com',
             'content': 'example.com',
             'remarks': 'initial',
             'owner': self.regular_user1,
-        }
-        to_update = RecordFactory(**data)
+            'service': ServiceFactory(),
+        })
+        to_update = RecordFactory(**self.default_data)
         response = self.client.patch(
             reverse('api:v2:record-detail', kwargs={'pk': to_update.pk}),
             data={'remarks': 'update'},
@@ -525,11 +549,11 @@ class TestRecords(BaseApiTestCase):
         self.assertFalse(record_request.last_change_json)
         record_request.reject()
         self.assertEqual(record_request.last_change_json, {
-            'content': {'new': '', 'old': data['content']},
-            'name': {'new': '', 'old': data['name']},
-            'owner': {'new': '', 'old': data['owner'].username},
+            'content': {'new': '', 'old': self.default_data['content']},
+            'name': {'new': '', 'old': self.default_data['name']},
+            'owner': {'new': '', 'old': self.default_data['owner'].username},
             'prio': {'new': '', 'old': ''},
-            'remarks': {'new': 'update', 'old': data['remarks']},
+            'remarks': {'new': 'update', 'old': self.default_data['remarks']},
             # old=3600 its because it's model default
             # when update request is send, new RecordRequest is created
             # if user doesn't specify ttl (or other value which has default)
@@ -537,7 +561,7 @@ class TestRecords(BaseApiTestCase):
             # set, so it can't be distinguish if eg. 3600 was from default of
             # from user
             'ttl': {'new': 3600, 'old': 3600},
-            'type': {'new': '', 'old': data['type']},
+            'type': {'new': '', 'old': self.default_data['type']},
             '_request_type': 'update',
         })
 
@@ -667,17 +691,23 @@ class TestRecords(BaseApiTestCase):
 
 
 class TestRecordValidation(BaseApiTestCase):
+    def setUp(self):
+        super().setUp()
+        self.default_data = {
+            'service': ServiceFactory().id,
+        }
+
     def test_validation_error_when_A_record_name_is_bad(self):
         self.client.login(username='super_user', password='super_user')
         domain = DomainFactory(name='example.com', owner=self.super_user)
-        data = {
+        self.default_data.update({
             'type': 'A',
             'domain': domain.id,
             'name': 'this-is-bad-bad-value-for-name',
             'content': 'this-is-bad-bad-value-for-content',
-        }
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -686,14 +716,14 @@ class TestRecordValidation(BaseApiTestCase):
     def test_validation_error_when_A_record_content_is_bad(self):
         self.client.login(username='super_user', password='super_user')
         domain = DomainFactory(name='example.com', owner=self.super_user)
-        data = {
+        self.default_data.update({
             'type': 'A',
             'domain': domain.id,
             'name': 'www.' + domain.name,
             'content': 'ThisIsBadBadValueForContent',
-        }
+        })
         response = self.client.post(
-            reverse('api:v2:record-list'), data, format='json',
+            reverse('api:v2:record-list'), self.default_data, format='json',
             **{'HTTP_ACCEPT': 'application/json; version=v2'}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -795,6 +825,7 @@ class TestDomainSelecting(BaseApiTestCase):
             'type': 'CNAME',
             'name': 'www.example.com',
             'content': 'example.com',
+            'service': ServiceFactory().id,
         }
         self.client.login(username='super_user', password='super_user')
 
@@ -853,6 +884,7 @@ class TestIPRecordTest(BaseApiTestCase):
         super().setUp()
         self.client.login(username='super_user', password='super_user')
         self.domain = DomainFactory(name='example.com', owner=self.super_user)
+        self.domain_2 = DomainFactory(name='google.com', owner=self.super_user)
         self.data = {
             'new': {},
             'old': {},
@@ -963,6 +995,94 @@ class TestIPRecordTest(BaseApiTestCase):
         self.assertEqual(record.content, target_content)
         self.assertEqual(record.name, target_name)
 
+    def test_update_txt_records_when_record_name_change(self):
+        target_name = 'update_test_1.{}'.format(self.domain.name)
+        record = RecordFactory(
+            type='A',
+            content='127.0.0.9',
+            name='update_test_1.{}'.format(self.domain.name),
+            domain=self.domain
+        )
+        record_txt = RecordFactory(
+            type='TXT',
+            content='Rack 1',
+            name='update_test_1.{}'.format(self.domain.name),
+            domain=self.domain
+        )
+        self.data.update({
+            'old': {
+                'address': record.content,
+                'hostname': record.name
+            },
+            'new': {
+                'address': record.content,
+                'hostname': target_name
+            },
+            'action': 'update',
+        })
+        response = self._send_post_data_to_endpoint()
+        self.assertEqual(response.status_code, 200)
+        record.refresh_from_db()
+        record_txt.refresh_from_db()
+        self.assertEqual(record.name, target_name)
+        self.assertEqual(record_txt.name, target_name)
+
+    def test_update_txt_records_when_record_name_and_domain_change(self):
+        target_name = 'update_test_1.{}'.format(self.domain_2.name)
+        record = RecordFactory(
+            type='A',
+            content='127.0.0.9',
+            name='update_test_1.{}'.format(self.domain.name),
+            domain=self.domain
+        )
+        record_txt = RecordFactory(
+            type='TXT',
+            content='Rack 2',
+            name='update_test_1.{}'.format(self.domain.name),
+            domain=self.domain
+        )
+        self.data.update({
+            'old': {
+                'address': record.content,
+                'hostname': record.name
+            },
+            'new': {
+                'address': record.content,
+                'hostname': target_name
+            },
+            'action': 'update',
+        })
+        response = self._send_post_data_to_endpoint()
+        self.assertEqual(response.status_code, 200)
+        record.refresh_from_db()
+        record_txt.refresh_from_db()
+        self.assertEqual(record.name, target_name)
+        self.assertEqual(record.domain_id, self.domain_2.id)
+        self.assertEqual(record_txt.name, target_name)
+
+    def test_delete_txt_records_when_record_delete(self):
+        record = RecordFactory(
+            type='A',
+            content='127.0.0.9',
+            name='update_test_1.{}'.format(self.domain.name),
+            domain=self.domain
+        )
+        record_txt = RecordFactory(
+            type='TXT',
+            content='Rack 1',
+            name='update_test_1.{}'.format(self.domain.name),
+            domain=self.domain
+        )
+        self.data = {
+            'address': record.content,
+            'hostname': record.name,
+            'action': 'delete'
+        }
+        response = self._send_post_data_to_endpoint()
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Record.objects.filter(id=record.id).exists())
+        self.assertFalse(Record.objects.filter(id=record_txt.id).exists())
+
     def test_when_hostname_is_empty_in_new_then_delete_record(self):
         record = RecordFactory(
             type='A',
@@ -1010,3 +1130,118 @@ class TestIPRecordTest(BaseApiTestCase):
             'action': 'delete'
         }
         self._send_post_data_to_endpoint()
+
+
+class TestServiceField(BaseApiTestCase):
+    def setUp(self):
+        self.guest = get_user_model().objects.create_user(
+            'guest', 'guest@example.com', 'guest'
+        )
+        self.owner_with_access = get_user_model().objects.create_user(
+            'owner_with_access', 'owner_with_access@example.com',
+            'owner_with_access'
+        )
+        self.domain = DomainFactory(
+            name='example.com', owner=self.owner_with_access
+        )
+
+    def _record_for_update(self):
+        return RecordFactory(
+            domain=self.domain,
+            owner=self.owner_with_access,
+            type='A',
+            name='www.' + self.domain.name,
+            content='192.168.1.1',
+            service=None,
+        )
+
+    def test_create_record_saves_service(self):
+        self.client.login(
+            username='owner_with_access', password='owner_with_access'
+        )
+        service = ServiceFactory()
+
+        response = self.send_post(
+            reverse('api:v2:record-list'),
+            {
+                'type': 'A',
+                'domain': self.domain.id,
+                'name': 'example.com',
+                'content': '192.168.0.1',
+                'service': service.id,
+
+            },
+        )
+
+        record = Record.objects.get(pk=response.data['id'])
+        self.assertEqual(record.service.id, service.id)
+        self.assertEqual(response.data['service'], service.id)
+
+    def test_create_record_raise_error_when_no_service(self):
+        self.client.login(
+            username='owner_with_access', password='owner_with_access'
+        )
+
+        response = self.send_post(
+            reverse('api:v2:record-list'),
+            {
+                'type': 'A',
+                'domain': self.domain.id,
+                'name': 'example.com',
+                'content': '192.168.0.1',
+            },
+        )
+
+        self.assertEqual(
+            response.data['service'], ['This field is required.']
+        )
+
+    def test_patch_record_works_when_service_is_empty(self):
+        self.client.login(
+            username='owner_with_access', password='owner_with_access'
+        )
+        record = self._record_for_update()
+
+        response = self.send_patch(
+            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            data={'remarks': 'update'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_patch_record_update_service_when_empty_earlier(self):
+        self.client.login(
+            username='owner_with_access', password='owner_with_access'
+        )
+        record = self._record_for_update()
+        service = ServiceFactory()
+
+        response = self.send_patch(
+            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            data={'service': service.id, 'remarks': 'update'},
+        )
+
+        record.refresh_from_db()
+        self.assertEqual(record.service.id, service.id)
+        self.assertEqual(response.data['service'], service.id)
+
+    def test_patch_record_works_when_service_is_changing(self):
+        self.client.login(
+            username='owner_with_access', password='owner_with_access'
+        )
+        record = self._record_for_update()
+        record.service = ServiceFactory()
+        record.save()
+
+        new_service = ServiceFactory()
+        response = self.send_patch(
+            reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
+            data={
+                'service': new_service.id,
+                'remarks': 'update'
+            },
+        )
+
+        record.refresh_from_db()
+        self.assertEqual(record.service.id, new_service.id)
+        self.assertEqual(response.data['service'], new_service.id)

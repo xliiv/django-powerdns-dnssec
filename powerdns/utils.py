@@ -1,7 +1,6 @@
 """Utilities for powerdns models"""
 
 import ipaddress
-from pkg_resources import working_set, Requirement
 
 import rules
 from django.conf import settings
@@ -17,9 +16,6 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from threadlocals.threadlocals import get_current_user
 from dj.choices import Choices
-
-
-VERSION = working_set.find(Requirement.parse('django-powerdns-dnssec')).version
 
 
 DOMAIN_NAME_RECORDS = ('CNAME', 'MX', 'NAPTR', 'NS', 'PTR')
@@ -175,7 +171,7 @@ class PermissionValidator():
         super().__init__(*args, **kwargs)
 
     def __call__(self, object_):
-        from powerdns.models.powerdns import can_edit
+        from powerdns.models import can_edit
         if not can_edit(get_current_user(), object_):
             raise ValidationError("You don't have permission to use this")
         return object_
