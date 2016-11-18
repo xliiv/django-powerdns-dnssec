@@ -62,7 +62,6 @@ class OwnershipByService(models.Model):
             owners = self.service.owners
         else:
             owners = ServiceOwner.objects.none()
-        print('owners', owners)
         return owners
 
     def _has_access_by_service(self, user):
