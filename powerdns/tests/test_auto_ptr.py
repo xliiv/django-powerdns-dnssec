@@ -97,10 +97,9 @@ class TestAutoPtr(TestCase):
             content='192.168.1.1',
             owner=self.user,
         )
-        Domain.objects.get(name='1.168.192.in-addr.arpa')
 
         ptr = get_ptr_obj(record.content, record.name)
-        self.assertTrue(record.service)
+        self.assertNotEqual(record.service, None)
         self.assertEqual(record.service, ptr.service)
 
     def test_auto_ptr_edit(self):
