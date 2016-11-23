@@ -285,7 +285,7 @@ class Domain(PreviousStateMixin, OwnershipByService, TimeTrackable, Owned):
     def has_access_by_service(self, user):
         "Check if user is one of owners either direct or through service"
         return user.id in self.service_owners.values_list(
-            'owner__id', flat=True
+            'owner_id', flat=True
         )
 
 

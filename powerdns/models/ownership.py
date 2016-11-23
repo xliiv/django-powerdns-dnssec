@@ -81,7 +81,7 @@ class OwnershipByService(models.Model):
         if self.service:
             permission_by_service = (
                 user.id in self.service_owners.values_list(
-                    'owner__id', flat=True
+                    'owner_id', flat=True
                 )
             )
         else:
