@@ -59,7 +59,7 @@ class OwnershipByService(models.Model):
     @property
     def service_owners(self):
         if self.service:
-            owners = self.service.owners.through.objects.filter(
+            owners = self.service.serviceowner_set.filter(
                 service=self.service
             )
         else:
