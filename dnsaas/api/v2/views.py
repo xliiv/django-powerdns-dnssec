@@ -158,6 +158,15 @@ class RecordViewSet(OwnerViewSet):
         record_request.owner = request.user
         record_request.target_owner = serializer.validated_data['owner']
 
+
+        #TODO:: cleanup
+        try:
+            from django.core.exceptions import ValidationError
+            record_request.clean()
+        except ValidationError as e:
+            return Response({"error": str(e.message)}, status=status.HTTP_400_BAD_REQUEST, headers={})
+
+
         if can_auto_accept_record_request(
             record_request, request.user, 'create',
         ):
@@ -215,6 +224,15 @@ class RecordViewSet(OwnerViewSet):
         record_request.owner = request.user
         record_request.target_owner = serializer.validated_data.get('owner')
         record_request.record = serializer.instance
+
+
+        #TODO:: cleanup
+        try:
+            from django.core.exceptions import ValidationError
+            record_request.clean()
+        except ValidationError as e:
+            return Response({"error": str(e.message)}, status=status.HTTP_400_BAD_REQUEST, headers={})
+
 
         if can_auto_accept_record_request(
             record_request, request.user, 'update',

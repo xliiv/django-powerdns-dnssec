@@ -1207,7 +1207,10 @@ class TestServiceField(BaseApiTestCase):
 
         response = self.send_patch(
             reverse('api:v2:record-detail', kwargs={'pk': record.pk}),
-            data={'remarks': 'update'},
+            data={
+                'remarks': 'update'
+                #,'type':'AAAA', 'content':'192.168.1.1'
+            },
         )
 
         self.assertEqual(response.status_code, 200)
