@@ -149,7 +149,8 @@ class RecordViewSet(OwnerViewSet):
 
     def _custom_clean(self, instance):
         # this would be called by `perform_update` or `perform_create`
-        # but since we have `target_` attribute we call it in `create` or `update`
+        # but since we have `target_` attribute we call it in `create` or
+        # `update`
         try:
             instance.clean()
         except ValidationError as e:
@@ -158,7 +159,6 @@ class RecordViewSet(OwnerViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
                 headers={}
             )
-
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
@@ -234,8 +234,6 @@ class RecordViewSet(OwnerViewSet):
         respone_with_error = self._custom_clean(record_request)
         if respone_with_error:
             return respone_with_error
-
-
 
         if can_auto_accept_record_request(
             record_request, request.user, 'update',
