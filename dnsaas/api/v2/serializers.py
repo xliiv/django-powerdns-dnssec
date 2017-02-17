@@ -147,7 +147,24 @@ class RecordSerializer(OwnerSerializer):
         if record_type == 'TXT':
             attrs['content'] = attrs['content'].replace('\\', '')
 
+    def _ensure_owner_is_set(self):
+        if self.instance:
+            has_service_owner = (
+                self.instance.service and
+                self.instance.service.owners.exists()
+            )
+            if (
+                not self.instance.owner_id and
+                not has_service_owner
+            ):
+                raise serializers.ValidationError({
+                    'owner': [
+                        'Record requires owner to be editable. Please contact DNS support.'  # noqa
+                    ]
+                })
+
     def validate(self, attrs):
+        self._ensure_owner_is_set()
         _trim_whitespace(attrs, ['name', 'content'])
         domain, content, record_type = (
             attrs.get('domain'), attrs.get('content'), attrs.get('type')
