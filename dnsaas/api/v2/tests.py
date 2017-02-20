@@ -679,7 +679,9 @@ class TestRecords(BaseApiTestCase):
             DeleteRequest.objects.get(target_id=record_request.record_id)
         )
 
-    def test_raise_error_when_record_misses_owner_and_service_owner(self):
+    def test_delete_raise_error_when_record_misses_owner_and_service_owner(
+        self
+    ):
         self.client.login(username='regular_user1', password='regular_user1')
         record = RecordFactory(
             type='A',
