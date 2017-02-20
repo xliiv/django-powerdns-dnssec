@@ -262,7 +262,7 @@ class RecordViewSet(OwnerViewSet):
         if not instance.has_owner():
             raise serializers.ValidationError({
                 'owner': [
-                    'Record requires owner to be editable. Please contact DNS support.'  # noqa
+                    'Record requires owner to be deletable. Please contact DNS support.'  # noqa
                 ]
             })
 
