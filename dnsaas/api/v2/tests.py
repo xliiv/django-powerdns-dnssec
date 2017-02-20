@@ -679,6 +679,29 @@ class TestRecords(BaseApiTestCase):
             DeleteRequest.objects.get(target_id=record_request.record_id)
         )
 
+    def test_raise_error_when_record_misses_owner_and_service_owner(self):
+        self.client.login(username='regular_user1', password='regular_user1')
+        record = RecordFactory(
+            type='A',
+            name='blog.com',
+            content='192.168.1.0',
+            owner=None,
+            service=None,
+        )
+        response = self.client.delete(
+            reverse(
+                'api:v2:record-detail',
+                kwargs={'pk': record.pk},
+            ),
+            format='json',
+            **{'HTTP_ACCEPT': 'application/json; version=v2'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data,
+            {'owner': ['Record requires owner to be editable. Please contact DNS support.']},  # noqa
+        )
+
     def test_user_cant_delete_record(self):
         """Regular user can't delete record"""
         self.client.login(username='regular_user1', password='regular_user1')

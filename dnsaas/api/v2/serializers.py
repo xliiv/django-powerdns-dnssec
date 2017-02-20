@@ -148,20 +148,12 @@ class RecordSerializer(OwnerSerializer):
             attrs['content'] = attrs['content'].replace('\\', '')
 
     def _ensure_owner_is_set(self):
-        if self.instance:
-            has_service_owner = (
-                self.instance.service and
-                self.instance.service.owners.exists()
-            )
-            if (
-                not self.instance.owner_id and
-                not has_service_owner
-            ):
-                raise serializers.ValidationError({
-                    'owner': [
-                        'Record requires owner to be editable. Please contact DNS support.'  # noqa
-                    ]
-                })
+        if self.instance and not self.instance.has_owner():
+            raise serializers.ValidationError({
+                'owner': [
+                    'Record requires owner to be editable. Please contact DNS support.'  # noqa
+                ]
+            })
 
     def validate(self, attrs):
         self._ensure_owner_is_set()
