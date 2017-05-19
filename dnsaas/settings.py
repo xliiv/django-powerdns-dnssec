@@ -110,12 +110,6 @@ STATICFILES_FINDERS = (
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '5w%2cqg#kb1w&amp;mm-ss67(eo&amp;3+d9%pbu+5pesa*l&amp;pk7g-m48d'
 
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-)
-
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -133,7 +127,32 @@ ROOT_URLCONF = 'dnsaas.urls'
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'dnsaas.wsgi.application'
 
-TEMPLATE_DIRS = ()
+CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
+CONSTANCE_CONFIG = {
+    'REPORT_BUG_URL': ('', 'Url to your issue tracker where issues related to DNSaaS can be filled'),
+}
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'OPTIONS': {
+            'context_processors': [
+                'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.static',
+                'django.template.context_processors.tz',
+                'django.contrib.messages.context_processors.messages',
+                'constance.context_processors.config',
+            ],
+            'loaders': [
+                'django.template.loaders.filesystem.Loader',
+                'django.template.loaders.app_directories.Loader',
+            ],
+        },
+    },
+]
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -154,6 +173,8 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
     'rules',
+    'constance',
+    'constance.backends.database',
 )
 
 AUTHENTICATION_BACKENDS = (
@@ -229,7 +250,7 @@ OWNER_NOTIFICATIONS = {
 
 SITE_TITLE = 'Django powerdns'
 DOCS_URL = ''
-REPORT_BUG_URL = ''
+#REPORT_BUG_URL = ''
 NEW_FEATURE_URL = ''
 SENTRY_JS_DSN = ''
 SENTRY_JS_CONFIG = {}
