@@ -58,7 +58,7 @@ class ServiceSerializer(ModelSerializer):
 
 class RecordRequestSerializer(OwnerSerializer):
     last_change = serializers.SerializerMethodField()
-    tmp_to_field = SlugRelatedField(
+    target_owner = SlugRelatedField(
         slug_field='username',
         queryset=get_user_model().objects.all(),
         allow_null=True,

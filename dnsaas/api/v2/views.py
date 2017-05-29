@@ -102,7 +102,7 @@ class ServiceViewSet(FiltersMixin, ModelViewSet):
 
 class RecordRequestsViewSet(FiltersMixin, ReadOnlyModelViewSet):
     queryset = RecordRequest.objects.all().select_related(
-        'owner', 'domain', 'record', 'tmp_to_field',
+        'owner', 'domain', 'record', 'target_owner',
     ).order_by('-id')
     filter_fields = ('owner', 'state')
     serializer_class = RecordRequestSerializer
@@ -169,7 +169,7 @@ class RecordViewSet(OwnerViewSet):
         record_request = RecordRequest()
         record_request.copy_records_data(serializer.validated_data.items())
         record_request.owner = request.user
-        record_request.tmp_to_field = serializer.validated_data['owner']
+        record_request.target_owner = serializer.validated_data['owner']
         respone_with_error = self._custom_clean(record_request)
         if respone_with_error:
             return respone_with_error
@@ -234,7 +234,7 @@ class RecordViewSet(OwnerViewSet):
         record_request.copy_records_data(data_to_copy)
         record_request.domain = serializer.instance.domain
         record_request.owner = request.user
-        record_request.tmp_to_field = serializer.validated_data.get('owner')
+        record_request.target_owner = serializer.validated_data.get('owner')
         record_request.record = serializer.instance
         respone_with_error = self._custom_clean(record_request)
         if respone_with_error:

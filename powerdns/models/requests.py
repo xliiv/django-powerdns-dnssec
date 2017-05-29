@@ -194,7 +194,7 @@ class ChangeCreateRequest(Request):
         for field_name in type(self).copy_fields:
             if field_name in self.ignore_fields:
                 continue
-            if field_name == 'tmp_to_field' and not getattr(self, field_name):
+            if field_name == 'target_owner' and not getattr(self, field_name):
                 continue
             setattr(
                 object_,
@@ -246,7 +246,7 @@ class DomainRequest(ChangeCreateRequest):
         'template',
         'reverse_template',
         'auto_ptr',
-        'tmp_to_field',
+        'target_owner',
         'service',
     ]
 
@@ -326,7 +326,7 @@ class DomainRequest(ChangeCreateRequest):
             "to it without owner's permission?"
         )
     )
-    tmp_to_field = models.ForeignKey(
+    target_owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name=_('Owner'),
         null=True,  # For the sake of existing ones
@@ -367,7 +367,7 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
         'disabled',
         'remarks',
         'ttl',
-        'tmp_to_field',
+        'target_owner',
         'service',
     ]
 
@@ -435,7 +435,7 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
     )
 
     remarks = models.TextField(blank=True)
-    tmp_to_field = models.ForeignKey(
+    target_owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name=_('Owner'),
         null=True,  # For the sake of existing ones
@@ -467,7 +467,7 @@ class RecordRequest(ChangeCreateRequest, RecordLike):
         return {
             'content': self.content or '',
             'name': self.name or '',
-            'owner': getattr(self.tmp_to_field, 'username', ''),
+            'owner': getattr(self.target_owner, 'username', ''),
             'prio': self.prio or '',
             'remarks': self.remarks or '',
             'ttl':  self.ttl or '',
