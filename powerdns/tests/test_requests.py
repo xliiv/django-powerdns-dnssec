@@ -44,7 +44,7 @@ class TestRequests(TestCase):
         request = DomainRequest.objects.create(
             parent_domain=self.domain,
             target_name='subdomain.example.com',
-            target_owner=self.user1,
+            tmp_to_field=self.user1,
             target_service=ServiceFactory(),
         )
         request.accept()
@@ -58,7 +58,7 @@ class TestRequests(TestCase):
             target_name='example.com',
             target_type='MASTER',
             owner=self.user2,
-            target_owner=self.user1,
+            tmp_to_field=self.user1,
             target_service=ServiceFactory(),
         )
         request.accept()
@@ -77,7 +77,7 @@ class TestRequests(TestCase):
             target_name='site.example.com',
             target_content='www.example.com',
             owner=self.user1,
-            target_owner=self.user2,
+            tmp_to_field=self.user2,
         )
         request.accept()
         assert_does_exist(
@@ -93,7 +93,7 @@ class TestRequests(TestCase):
             target_type='CNAME',
             target_name='forum.example.com',
             target_content='djangobb.example.com',
-            target_owner=self.user2,
+            tmp_to_field=self.user2,
             owner=self.user1,
         )
         request.accept()

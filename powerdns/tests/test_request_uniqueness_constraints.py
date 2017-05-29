@@ -45,7 +45,7 @@ class TestRequestUniquenessConstraints(RecordTestCase):
             target_type='A',
             target_name='wiki.example.com',
             target_content='192.168.1.2',
-            target_owner=self.user,
+            tmp_to_field=self.user,
         )
 
     def test_noconflict_with_itself(self):
@@ -55,7 +55,7 @@ class TestRequestUniquenessConstraints(RecordTestCase):
             target_type='CNAME',
             target_name='blog.example.com',
             target_content='www2.example.com',
-            target_owner=self.user,
+            tmp_to_field=self.user,
         )
 
     def test_conflicting_a_record(self):
@@ -65,7 +65,7 @@ class TestRequestUniquenessConstraints(RecordTestCase):
             target_type='A',
             target_name='blog.example.com',
             target_content='192.168.1.2',
-            target_owner=self.user,
+            tmp_to_field=self.user,
         )
 
     def test_nonconflicting_cname_record(self):
@@ -75,7 +75,7 @@ class TestRequestUniquenessConstraints(RecordTestCase):
             target_type='CNAME',
             target_name='wiki.example.com',
             target_content='site.example.com',
-            target_owner=self.user,
+            tmp_to_field=self.user,
         )
 
     def test_conflicting_cname_record(self):
@@ -85,7 +85,7 @@ class TestRequestUniquenessConstraints(RecordTestCase):
             target_type='CNAME',
             target_name='www.example.com',
             target_content='site.example.com',
-            target_owner=self.user,
+            tmp_to_field=self.user,
         )
 
     def test_conflicting_second_cname_record(self):
@@ -95,5 +95,5 @@ class TestRequestUniquenessConstraints(RecordTestCase):
             target_type='CNAME',
             target_name='blog.example.com',
             target_content='site.example.com',
-            target_owner=self.user,
+            tmp_to_field=self.user,
         )

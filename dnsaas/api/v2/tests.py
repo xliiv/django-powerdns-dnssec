@@ -216,7 +216,7 @@ class TestRecords(BaseApiTestCase):
             record__id=response.data['id'],
         )
         self.assertEqual(record_request.owner, self.super_user)
-        self.assertEqual(record_request.target_owner, self.regular_user1)
+        self.assertEqual(record_request.tmp_to_field, self.regular_user1)
 
     def test_user_is_set_correct_when_adding_record_without_owner(self):
         self.client.login(username='super_user', password='super_user')
@@ -237,7 +237,7 @@ class TestRecords(BaseApiTestCase):
             record__id=response.data['id'],
         )
         self.assertEqual(record_request.owner, self.super_user)
-        self.assertEqual(record_request.target_owner, self.super_user)
+        self.assertEqual(record_request.tmp_to_field, self.super_user)
 
     def test_record_creation_dumps_history_data_correctly(self):
         self.client.login(username='super_user', password='super_user')
@@ -507,7 +507,7 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record.owner, self.regular_user2)
         record_request = RecordRequest.objects.get(record__id=record.id)
         self.assertEqual(record_request.owner, self.super_user)
-        self.assertEqual(record_request.target_owner, self.regular_user2)
+        self.assertEqual(record_request.tmp_to_field, self.regular_user2)
 
     def test_user_is_set_correct_when_updating_record_without_owner(self):
         self.client.login(username='super_user', password='super_user')
@@ -529,7 +529,7 @@ class TestRecords(BaseApiTestCase):
         self.assertEqual(record.owner, self.regular_user1)
         record_request = RecordRequest.objects.get(record__id=record.id)
         self.assertEqual(record_request.owner, self.super_user)
-        self.assertEqual(record_request.target_owner, None)
+        self.assertEqual(record_request.tmp_to_field, None)
 
     def test_owner_keeps_value_when_no_owner_in_update(self):
         """
