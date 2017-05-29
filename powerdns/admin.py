@@ -196,7 +196,7 @@ class DeleteRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
     model = DeleteRequest
     list_display = ['content_type', 'state', 'created']
     list_filter = ('content_type', 'state',)
-    fields = ['owner', 'tmp_ti_field', 'content_type', 'state', 'created']
+    fields = ['owner', 'target_id', 'content_type', 'state', 'created']
     radio_fields = {'content_type': admin.HORIZONTAL}
 
 

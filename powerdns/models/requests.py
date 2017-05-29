@@ -108,8 +108,8 @@ class Request(Owned, TimeTrackable):
 class DeleteRequest(Request):
     """A request for object deletion"""
     content_type = models.ForeignKey(ContentType)
-    tmp_ti_field = models.PositiveIntegerField()
-    target = GenericForeignKey('content_type', 'tmp_ti_field')
+    target_id = models.PositiveIntegerField()
+    target = GenericForeignKey('content_type', 'target_id')
 
     @transaction.atomic
     def accept(self):

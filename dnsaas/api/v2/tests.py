@@ -676,7 +676,7 @@ class TestRecords(BaseApiTestCase):
         with self.assertRaises(Record.DoesNotExist):
             RecordRequest.objects.get(pk=record_request.id).record
         self.assertTrue(
-            DeleteRequest.objects.get(tmp_ti_field=record_request.record_id)
+            DeleteRequest.objects.get(target_id=record_request.record_id)
         )
 
     def test_delete_raise_error_when_record_misses_owner_and_service_owner(
@@ -725,7 +725,7 @@ class TestRecords(BaseApiTestCase):
         self.assertTrue(Record.objects.get(id=record_request.record.id))
         self.assertEqual(
             DeleteRequest.objects.filter(
-                tmp_ti_field=record_request.record.id
+                target_id=record_request.record.id
             ).count(),
             1,
         )
@@ -754,7 +754,7 @@ class TestRecords(BaseApiTestCase):
         self.assertTrue(Record.objects.get(id=record_request.record.id))
         self.assertEqual(
             DeleteRequest.objects.filter(
-                tmp_ti_field=record_request.record.id
+                target_id=record_request.record.id
             ).count(),
             0,
         )
@@ -777,7 +777,7 @@ class TestRecords(BaseApiTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         delete_request = DeleteRequest.objects.get(
-            tmp_ti_field=record_request.record_id
+            target_id=record_request.record_id
         )
         self.assertEqual(delete_request.last_change_json, {
             'content': {'new': '', 'old': '192.168.1.0'},
