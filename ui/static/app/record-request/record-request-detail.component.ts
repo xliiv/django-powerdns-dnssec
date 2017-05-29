@@ -41,7 +41,7 @@ export class RecordRequestDetailComponent implements OnInit {
 
   getValue(fieldName: string): string {
     if ($.isEmptyObject(this.recordRequest.last_change)) {
-      let value: string = this.recordRequest[`target_${fieldName}`];
+      let value: string = this.recordRequest[`${fieldName}`];
       return `<span class="new">${value}</span>`;
     }
 

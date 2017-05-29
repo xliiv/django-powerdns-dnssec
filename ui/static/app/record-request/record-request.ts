@@ -2,13 +2,13 @@
 export class RecordRequest {
   id: number;
   owner: string;
-  target_name: string;
-  target_type: string;
-  target_content: string;
-  target_prio: string;
-  target_ttl: string;
-  target_auth: string;
-  target_remarks: string;
+  name: string;
+  type: string;
+  content: string;
+  prio: string;
+  ttl: string;
+  auth: string;
+  remarks: string;
   created: string;
   domain: number;
   record: number;

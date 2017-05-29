@@ -43,9 +43,9 @@ class TestRequests(TestCase):
         set_current_user(self.user1)
         request = DomainRequest.objects.create(
             parent_domain=self.domain,
-            target_name='subdomain.example.com',
+            name='subdomain.example.com',
             tmp_to_field=self.user1,
-            target_service=ServiceFactory(),
+            service=ServiceFactory(),
         )
         request.accept()
         assert_does_exist(
@@ -55,11 +55,11 @@ class TestRequests(TestCase):
     def test_domain_change(self):
         request = DomainRequest.objects.create(
             domain=self.domain,
-            target_name='example.com',
-            target_type='MASTER',
+            name='example.com',
+            type='MASTER',
             owner=self.user2,
             tmp_to_field=self.user1,
-            target_service=ServiceFactory(),
+            service=ServiceFactory(),
         )
         request.accept()
         assert_does_exist(
@@ -73,9 +73,9 @@ class TestRequests(TestCase):
     def test_record_creation(self):
         request = RecordRequest.objects.create(
             domain=self.domain,
-            target_type='CNAME',
-            target_name='site.example.com',
-            target_content='www.example.com',
+            type='CNAME',
+            name='site.example.com',
+            content='www.example.com',
             owner=self.user1,
             tmp_to_field=self.user2,
         )
@@ -90,9 +90,9 @@ class TestRequests(TestCase):
         request = RecordRequest.objects.create(
             domain=self.domain,
             record=self.record,
-            target_type='CNAME',
-            target_name='forum.example.com',
-            target_content='djangobb.example.com',
+            type='CNAME',
+            name='forum.example.com',
+            content='djangobb.example.com',
             tmp_to_field=self.user2,
             owner=self.user1,
         )

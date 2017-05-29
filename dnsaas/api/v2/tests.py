@@ -882,7 +882,7 @@ class TestRecordRequestSerializer(TestCase):
 
     def test_last_change_comes_from_dump_when_status_not_open(self):
         rr = RecordRequestFactory(
-            state=RequestStates.OPEN, target_remarks='initial',
+            state=RequestStates.OPEN, remarks='initial',
         )
         rr.accept()
         serializer = RecordRequestSerializer(rr)
@@ -906,7 +906,7 @@ class TestRecordRequestSerializer(TestCase):
 
     def test_last_change_is_calculated_when_status_open(self):
         rr = RecordRequestFactory(
-            state=RequestStates.OPEN, target_remarks='update 1',
+            state=RequestStates.OPEN, remarks='update 1',
             record__remarks='initial'
         )
         serializer = RecordRequestSerializer(rr)
@@ -917,7 +917,7 @@ class TestRecordRequestSerializer(TestCase):
         )
         self.assertEqual(
             serializer.data['last_change']['remarks']['new'],
-            serializer.instance.target_remarks
+            serializer.instance.remarks
         )
 
         rr.record.remarks = 'update 2'
@@ -931,7 +931,7 @@ class TestRecordRequestSerializer(TestCase):
         )
         self.assertEqual(
             serializer.data['last_change']['remarks']['new'],
-            serializer.instance.target_remarks
+            serializer.instance.remarks
         )
 
 
@@ -1121,8 +1121,8 @@ class TestIPRecordTest(BaseApiTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_update_record(self):
-        target_content = '192.168.1.8'
-        target_name = 'test_update_2.{}'.format(self.domain.name)
+        content = '192.168.1.8'
+        name = 'test_update_2.{}'.format(self.domain.name)
         record = RecordFactory(
             type='A',
             content='127.0.0.9',
@@ -1135,19 +1135,19 @@ class TestIPRecordTest(BaseApiTestCase):
                 'hostname': record.name
             },
             'new': {
-                'address': target_content,
-                'hostname': target_name
+                'address': content,
+                'hostname': name
             },
             'action': 'update',
         })
         response = self._send_post_data_to_endpoint()
         self.assertEqual(response.status_code, 200)
         record.refresh_from_db()
-        self.assertEqual(record.content, target_content)
-        self.assertEqual(record.name, target_name)
+        self.assertEqual(record.content, content)
+        self.assertEqual(record.name, name)
 
     def test_update_txt_records_when_record_name_change(self):
-        target_name = 'new-value.{}'.format(self.domain.name)
+        name = 'new-value.{}'.format(self.domain.name)
         record = RecordFactory(
             type='A',
             content='127.0.0.9',
@@ -1167,7 +1167,7 @@ class TestIPRecordTest(BaseApiTestCase):
             },
             'new': {
                 'address': record.content,
-                'hostname': target_name
+                'hostname': name
             },
             'action': 'update',
         })
@@ -1178,11 +1178,11 @@ class TestIPRecordTest(BaseApiTestCase):
         self.assertEqual(response.status_code, 200)
         record.refresh_from_db()
         record_txt.refresh_from_db()
-        self.assertEqual(record.name, target_name)
-        self.assertEqual(record_txt.name, target_name)
+        self.assertEqual(record.name, name)
+        self.assertEqual(record_txt.name, name)
 
     def test_update_txt_records_when_record_name_and_domain_change(self):
-        target_name = 'update_test_1.{}'.format(self.domain_2.name)
+        name = 'update_test_1.{}'.format(self.domain_2.name)
         record = RecordFactory(
             type='A',
             content='127.0.0.9',
@@ -1202,7 +1202,7 @@ class TestIPRecordTest(BaseApiTestCase):
             },
             'new': {
                 'address': record.content,
-                'hostname': target_name
+                'hostname': name
             },
             'action': 'update',
         })
@@ -1210,9 +1210,9 @@ class TestIPRecordTest(BaseApiTestCase):
         self.assertEqual(response.status_code, 200)
         record.refresh_from_db()
         record_txt.refresh_from_db()
-        self.assertEqual(record.name, target_name)
+        self.assertEqual(record.name, name)
         self.assertEqual(record.domain_id, self.domain_2.id)
-        self.assertEqual(record_txt.name, target_name)
+        self.assertEqual(record_txt.name, name)
 
     def test_update_record_with_nonexisting_domain(self):
         record = RecordFactory(
@@ -1281,18 +1281,18 @@ class TestIPRecordTest(BaseApiTestCase):
         self.assertFalse(Record.objects.filter(id=record.id).exists())
 
     def test_delete_record(self):
-        target_content = '192.168.1.8'
-        target_name = 'test_update_2.{}'.format(self.domain.name)
+        content = '192.168.1.8'
+        name = 'test_update_2.{}'.format(self.domain.name)
         record_kwargs = {
             'type': 'A',
-            'content': target_content,
-            'name': target_name,
+            'content': content,
+            'name': name,
             'domain': self.domain
         }
         RecordFactory(**record_kwargs)
         self.data = {
-            'address': target_content,
-            'hostname': target_name,
+            'address': content,
+            'hostname': name,
             'action': 'delete'
         }
         self._send_post_data_to_endpoint()

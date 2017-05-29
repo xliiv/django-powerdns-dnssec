@@ -29,20 +29,20 @@
        <tbody>
         <tr *ngFor="let request of recordRequests" [highlight]>
           <td>
-            <div class="wrap" title="{{ request.target_name }}">
-              {{ request.target_name }}
+            <div class="wrap" title="{{ request.name }}">
+              {{ request.name }}
             </div>
           </td>
           <td>
-            {{ request.target_type }}
+            {{ request.type }}
           </td>
           <td>
-            <div class="wrap" title="{{ request.target_content }}">
-              {{ request.target_content }}
+            <div class="wrap" title="{{ request.content }}">
+              {{ request.content }}
             </div>
           </td>
           <td>
-            {{ request.target_ttl }}
+            {{ request.ttl }}
           </td>
           <td>
             {{ request.tmp_to_field }}

@@ -97,7 +97,7 @@ class RecordRequestFactory(DjangoModelFactory):
     record = factory.SubFactory(RecordFactory)
     domain = factory.SubFactory(DomainFactory)
     owner = factory.SubFactory(UserFactory)
-    target_service = factory.SubFactory(ServiceFactory)
+    service = factory.SubFactory(ServiceFactory)
 
 
 class RecordDeleteRequestFactory(factory.django.DjangoModelFactory):

@@ -211,23 +211,23 @@ class DomainRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
         'parent_domain',
         'state',
         'created',
-        'target_account',
-        'target_auto_ptr',
-        'target_master',
-        'target_name',
+        'account',
+        'auto_ptr',
+        'master',
+        'name',
         'tmp_to_field',
-        'target_remarks',
-        'target_reverse_template',
-        'target_template',
-        'target_type',
-        'target_unrestricted',
+        'remarks',
+        'reverse_template',
+        'template',
+        'type',
+        'unrestricted',
     ]
     search_fields = ('domain__name',)
 
 
 class RecordRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
     model = RecordRequest
-    list_display = ['target_' + field for field in RECORD_LIST_FIELDS] + \
+    list_display = ['' + field for field in RECORD_LIST_FIELDS] + \
                    ['state', 'created']
     list_filter = ('state',)
     fields = [
@@ -237,15 +237,15 @@ class RecordRequestAdmin(ReadonlyAdminMixin, admin.ModelAdmin):
         'record',
         'state',
         'created',
-        'target_auth',
-        'target_content',
-        'target_disabled',
-        'target_name',
+        'auth',
+        'content',
+        'disabled',
+        'name',
         'tmp_to_field',
-        'target_prio',
-        'target_remarks',
-        'target_ttl',
-        'target_type',
+        'prio',
+        'remarks',
+        'ttl',
+        'type',
     ]
     search_fields = ('domain__name', 'record__name', 'record__content')
 

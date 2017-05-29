@@ -149,7 +149,7 @@ class RecordViewSet(OwnerViewSet):
 
     def _custom_clean(self, instance):
         # this would be called by `perform_update` or `perform_create`
-        # but since we have `target_` attribute we call it in `create` or
+        # but since we have `` attribute we call it in `create` or
         # `update`
         try:
             instance.clean()
