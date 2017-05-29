@@ -140,7 +140,7 @@ class Owned(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True)
     authorisations = GenericRelation(
         'Authorisation',
-        object_id_field='target_id'
+        object_id_field='tmp_ti_field'
     )
 
     class Meta:

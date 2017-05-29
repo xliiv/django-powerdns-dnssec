@@ -401,7 +401,7 @@ class Record(
     delete_request = GenericRelation(
         'DeleteRequest',
         content_type_field='content_type',
-        object_id_field='target_id',
+        object_id_field='tmp_ti_field',
     )
 
     class Meta:

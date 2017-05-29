@@ -23,8 +23,8 @@ class Authorisation(models.Model):
         related_name='received_authorisations',
     )
     content_type = models.ForeignKey(ContentType)
-    target_id = models.PositiveIntegerField()
-    target = GenericForeignKey('content_type', 'target_id')
+    tmp_ti_field = models.PositiveIntegerField()
+    target = GenericForeignKey('content_type', 'tmp_ti_field')
 
     def __str__(self):
         return '{} authorised {} to {}'.format(
